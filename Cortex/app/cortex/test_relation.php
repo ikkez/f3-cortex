@@ -298,6 +298,15 @@ class Test_Relation {
 			$type.': many-to-many: result is collection'
 		);
 
+
+		$tag3 = $tag->load(array($tag_pk.' = ?',$tag_id[2]));
+		$news->tags2[] = $tag3;
+		$news->save();
+		$test->expect(
+			count($news->tags2) == 3,
+			$type.': many-to-many relation added implicitly'
+		);
+
 		$news->load(array($news_pk.' = ?', $news_id[0]));
 		$news->tags2 = NULL;
 		$news->save();

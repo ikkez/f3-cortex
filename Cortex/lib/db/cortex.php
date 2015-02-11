@@ -18,7 +18,7 @@
  *  https://github.com/ikkez/F3-Sugar/
  *
  *  @package DB
- *  @version 1.3.0
+ *  @version 1.3.1-dev
  *  @since 24.04.2012
  *  @date 19.01.2015
  */
@@ -1031,9 +1031,16 @@ class Cortex extends Cursor {
 				return false;
 			$result=$this->update();
 		}
+		// update changed collections
+		$fields = $this->fieldConf;
+		if ($fields)
+			foreach($fields as $key=>$conf)
+				if (!empty($this->fieldsCache[$key]) && $this->fieldsCache[$key] instanceof CortexCollection
+					&& $this->fieldsCache[$key]->hasChanged())
+					$this->set($key,$this->fieldsCache[$key]->getAll('_id',true));
+
 		// m:m save cascade
 		if (!empty($this->saveCsd)) {
-			$fields = $this->fieldConf;
 			foreach($this->saveCsd as $key => $val) {
 				if($fields[$key]['relType'] == 'has-many') {
 					$relConf = $fields[$key]['has-many'];
@@ -1065,6 +1072,7 @@ class Cortex extends Cursor {
 					$val->save();
 				}
 			}
+			$this->saveCsd = array();
 		}
 		$this->emit($new?'afterinsert':'afterupdate');
 		return $result;
@@ -2318,6 +2326,7 @@ class CortexCollection extends \ArrayIterator {
 	protected
 		$relSets = array(),
 		$pointer = 0,
+		$changed = false,
 		$cid;
 
 	const
@@ -2342,8 +2351,10 @@ class CortexCollection extends \ArrayIterator {
 	 * set a collection of models
 	 * @param $models
 	 */
-	function setModels($models) {
+	function setModels($models,$init=true) {
 		array_map(array($this,'add'),$models);
+		if ($init)
+			$this->changed = false;
 	}
 
 	/**
@@ -2354,6 +2365,15 @@ class CortexCollection extends \ArrayIterator {
 	{
 		$model->addToCollection($this->cid);
 		$this->append($model);
+	}
+
+	public function offsetSet($i, $val) {
+		$this->changed=true;
+		parent::offsetSet($i,$val);
+	}
+
+	public function hasChanged() {
+		return $this->changed;
 	}
 
 	/**
