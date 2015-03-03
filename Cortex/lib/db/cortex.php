@@ -1291,9 +1291,11 @@ class Cortex extends Cursor {
 			$schema = new Schema($this->db);
 			$table = $schema->alterTable($this->table);
 			// add missing field
-			if(!in_array($key,$table->getCols())) {
+			if (!in_array($key,$table->getCols())) {
 				// determine data type
-				if (is_int($val)) $type = $schema::DT_INT;
+				if (isset($this->fieldConf[$key]) && isset($this->fieldConf[$key]['type']))
+					$type = $this->fieldConf[$key]['type'];
+				elseif (is_int($val)) $type = $schema::DT_INT;
 				elseif (is_double($val)) $type = $schema::DT_DOUBLE;
 				elseif (is_float($val)) $type = $schema::DT_FLOAT;
 				elseif (is_bool($val)) $type = $schema::DT_BOOLEAN;
