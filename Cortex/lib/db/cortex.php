@@ -1469,7 +1469,7 @@ class Cortex extends Cursor {
 						}
 						$result = $cx->getSubset($key, array($this->get($toConf[1])));
 						$this->fieldsCache[$key] = $result ? (($type == 'has-one')
-							? $result[0][0] : $result[0]) : NULL;
+							? $result[0][0] : CortexCollection::factory($result[0])) : NULL;
 					} else {
 						$crit = array($fromConf[1].' = ?', $this->get($toConf[1],true));
 						$crit = $this->mergeWithRelFilter($key, $crit);
@@ -1523,7 +1523,8 @@ class Cortex extends Cursor {
 						}
 						// fetch subset from preloaded rels using cached pivot keys
 						$fkeys = $cx->getSubset($key.'_pivot', array($this->get($id)));
-						$this->fieldsCache[$key] = $fkeys ? $cx->getSubset($key, $fkeys[0]) : NULL;
+						$this->fieldsCache[$key] = $fkeys ?
+							CortexCollection::factory($cx->getSubset($key, $fkeys[0])) : NULL;
 					} // no collection
 					else {
 						// find foreign keys
@@ -1586,7 +1587,7 @@ class Cortex extends Cursor {
 							$cx->setRelSet($key, $relSet ? $relSet->getBy($relConf[1]) : NULL);
 						}
 						// get a subset of the preloaded set
-						$this->fieldsCache[$key] = $cx->getSubset($key, $fkeys);
+						$this->fieldsCache[$key] = CortexCollection::factory($cx->getSubset($key, $fkeys));
 					} else {
 						// load foreign models
 						$filter = array($relConf[1].' IN ?', $fkeys);
@@ -1731,17 +1732,10 @@ class Cortex extends Cursor {
 						// cast relations
 						$val = (($relType == 'belongs-to-one' || $relType == 'belongs-to-many')
 							&& !$mp->exists($key)) ? NULL : $mp->get($key);
-						if (is_array($val) || is_object($val)) {
-							if ($relType == 'belongs-to-one' || $relType == 'has-one')
-								// single object
-								$val = $val->cast(null, $rel_depths);
-							elseif ($relType == 'belongs-to-many' || $relType == 'has-many')
-								// multiple objects
-								foreach ($val as $k => $item)
-									$val[$k] = is_object($item) ? $item->cast(null, $rel_depths) : null;
-						}
-						if ($val instanceof CortexCollection)
-							$val = $val->expose();
+						if ($val instanceof Cortex)
+							$val = $val->cast(null, $rel_depths);
+						elseif ($val instanceof CortexCollection)
+							$val = $val->castAll($rel_depths);
 					}
 					// decode array fields
 					elseif (isset($this->fieldConf[$key]['type'])) {
@@ -2363,8 +2357,7 @@ class CortexCollection extends \ArrayIterator {
 	 * add single model to collection
 	 * @param $model
 	 */
-	function add(Cortex $model)
-	{
+	function add(Cortex $model) {
 		$model->addToCollection($this->cid);
 		$this->append($model);
 	}
@@ -2422,9 +2415,11 @@ class CortexCollection extends \ArrayIterator {
 			trigger_error(sprintf(self::E_SubsetKeysValue,gettype($keys)));
 		if (!$this->hasRelSet($prop) || !($relSet = $this->getRelSet($prop)))
 			return null;
-		foreach ($keys as &$key)
+		foreach ($keys as &$key) {
 			if ($key instanceof \MongoId)
 				$key = (string) $key;
+			unset($key);
+		}
 		return array_values(array_intersect_key($relSet, array_flip($keys)));
 	}
 
@@ -2516,6 +2511,12 @@ class CortexCollection extends \ArrayIterator {
 		}
 		foreach ($del as $ii)
 			unset($this[$ii]);
+	}
+
+	static public function factory($records) {
+		$cc = new self();
+		$cc->setModels($records);
+		return $cc;
 	}
 
 	/**
