@@ -1002,7 +1002,7 @@ class Cortex extends Cursor {
 	public function erase($filter = null)
 	{
 		$filter = $this->queryParser->prepareFilter($filter, $this->dbsType);
-		if ((!$filter && $this->emit('beforeerase')!==false) || $filter) {
+		if (!$filter && $this->emit('beforeerase')!==false) {
 			if ($this->fieldConf) {
 				foreach($this->fieldConf as $field => $conf)
 					if (isset($conf['has-many']) &&
@@ -1010,10 +1010,10 @@ class Cortex extends Cursor {
 						$this->set($field,null);
 				$this->save();
 			}
+			$this->mapper->erase();
+			$this->emit('aftererase');
+		} elseif($filter)
 			$this->mapper->erase($filter);
-			if (!$filter)
-				$this->emit('aftererase');
-		}
 	}
 
 	/**
