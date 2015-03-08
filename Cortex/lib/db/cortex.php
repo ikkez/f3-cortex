@@ -1491,6 +1491,10 @@ class Cortex extends Cursor {
 					} else
 						$mmTable = $fromConf['refTable'];
 					// create mm table mapper
+					if (!$this->get($id,true)) {
+						$this->fieldsCache[$key] = null;
+						return $this->fieldsCache[$key];
+					}
 					$rel = $this->getRelInstance(null,array('db'=>$this->db,'table'=>$mmTable));
 					if ($this->collectionID && $this->smartLoading) {
 						$cx = CortexCollection::instance($this->collectionID);
