@@ -448,7 +448,7 @@ class Cortex extends Cursor {
 				$relConf = array($relConf, '_id');
 			// set field type
 			if ($relConf[1] == '_id')
-				$field['type'] = Schema::DT_INT8;
+				$field['type'] = Schema::DT_INT4;
 			else {
 				// find foreign field type
 				$fc = $relConf[0]::resolveConfiguration();
