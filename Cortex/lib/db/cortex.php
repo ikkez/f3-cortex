@@ -726,6 +726,7 @@ class Cortex extends Cursor {
 					// factory new mappers
 					$mapper = clone($this->mapper);
 					$mapper->reset();
+					// TODO: refactor this. Reflection can be removed for F3 >= v3.4.1
 					$m_adhoc = empty($adhoc) ? array() : $m_refl_adhoc;
 					foreach ($record as $key=>$val)
 						if (isset($m_refl_adhoc[$key]))
