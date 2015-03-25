@@ -149,8 +149,10 @@ class Cortex extends Cursor {
 		$this->standardiseID = $f3->exists('CORTEX.standardiseID') ?
 			$f3->get('CORTEX.standardiseID') : TRUE;
 		if(!empty($this->fieldConf))
-			foreach($this->fieldConf as &$conf)
+			foreach($this->fieldConf as &$conf) {
 				$conf=static::resolveRelationConf($conf);
+				unset($conf);
+			}
 	}
 
 	/**
@@ -335,7 +337,9 @@ class Cortex extends Cursor {
 					if (in_array($field['type'], array(self::DT_JSON, self::DT_SERIALIZED)))
 						$field['type']=$schema::DT_TEXT;
 					// defaults values
-					if (!array_key_exists('nullable', $field)) $field['nullable'] = true;
+					if (!array_key_exists('nullable', $field))
+						$field['nullable'] = true;
+					unset($field);
 				}
 			if (!in_array($table, $schema->getTables())) {
 				// create table
@@ -557,6 +561,7 @@ class Cortex extends Cursor {
 				foreach($result as &$mapper) {
 					$cr=$mapper->get($counter);
 					$mapper->virtual('count_'.$counter,$cr?count($cr):null);
+					unset($mapper);
 				}
 		$cc = new CortexCollection();
 		$cc->setModels($result);
@@ -2062,6 +2067,7 @@ class CortexQueryParser extends \Prefab {
 						} else
 							$ncond[] = $val;
 					}
+					unset($part);
 				}
 				array_unshift($ncond, implode(' ', $parts));
 				break;
@@ -2108,6 +2114,7 @@ class CortexQueryParser extends \Prefab {
 				$params[] = $args[$match[0]];
 			} elseif (is_int(strpos($part, '?')))
 				$params[] = $args[$pos++];
+			unset($part);
 		}
 		return array($parts, $params);
 	}
@@ -2159,6 +2166,7 @@ class CortexQueryParser extends \Prefab {
 					$chks[] = 'isset('.$field.')';
 				$part = '('.implode(' && ',$chks).' && ('.$part.'))';
 			}
+			unset($part);
 		}
 		array_unshift($ncond, implode(' ', $parts));
 		return $ncond;
