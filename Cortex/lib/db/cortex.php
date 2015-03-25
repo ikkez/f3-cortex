@@ -44,7 +44,7 @@ class Cortex extends Cursor {
 		$dbsType,       // mapper engine type [jig, sql, mongo]
 		$fieldsCache,   // relation field cache
 		$saveCsd,       // mm rel save cascade
-		$collectionID,  // collection set identifier
+		$collection,    // collection
 		$relFilter,     // filter for loading related models
 		$hasCond,       // IDs of records the next find should have
 		$whitelist,     // restrict to these fields
@@ -236,8 +236,22 @@ class Cortex extends Cursor {
 		return $conf;
 	}
 
-	public function addToCollection($cID) {
-		$this->collectionID = $cID;
+	/**
+	 * give this model a reference to the collection it is part of
+	 * @param CortexCollection $cx
+	 */
+	public function addToCollection($cx) {
+		$this->collection = $cx;
+	}
+
+	/**
+	 * returns the collection where this model lives in
+	 * @return CortexCollection
+	 */
+	protected function getCollection()
+	{
+		return ($this->collection && $this->smartLoading)
+			? $this->collection : false;
 	}
 
 	/**
@@ -544,7 +558,7 @@ class Cortex extends Cursor {
 					$cr=$mapper->get($counter);
 					$mapper->virtual('count_'.$counter,$cr?count($cr):null);
 				}
-		$cc = new \DB\CortexCollection();
+		$cc = new CortexCollection();
 		$cc->setModels($result);
 		if($sort) {
 			$cc->orderBy($options['order']);
@@ -1416,8 +1430,7 @@ class Cortex extends Cursor {
 					if ($this->dbsType == 'sql' && $relConf[1] == '_id')
 						$relConf[1] = $rel->primary;
 					// am i part of a result collection?
-					if ($this->collectionID && $this->smartLoading) {
-						$cx = CortexCollection::instance($this->collectionID);
+					if ($cx = $this->getCollection()) {
 						// does the collection has cached results for this key?
 						if (!$cx->hasRelSet($key)) {
 							// build the cache, find all values of current key
@@ -1457,9 +1470,8 @@ class Cortex extends Cursor {
 					if ($toConf[1] != $id && (!$this->exists($toConf[1])
 							|| is_null($this->mapper->get($toConf[1]))))
 						$this->fieldsCache[$key] = null;
-					elseif($this->collectionID && $this->smartLoading) {
+					elseif($cx = $this->getCollection()) {
 						// part of a result set
-						$cx = CortexCollection::instance($this->collectionID);
 						if(!$cx->hasRelSet($key)) {
 							// emit eager loading
 							$relKeys = $cx->getAll($toConf[1],true);
@@ -1497,8 +1509,7 @@ class Cortex extends Cursor {
 						return $this->fieldsCache[$key];
 					}
 					$rel = $this->getRelInstance(null,array('db'=>$this->db,'table'=>$mmTable));
-					if ($this->collectionID && $this->smartLoading) {
-						$cx = CortexCollection::instance($this->collectionID);
+					if ($cx = $this->getCollection()) {
 						if (!$cx->hasRelSet($key)) {
 							// get IDs of all results
 							$relKeys = $cx->getAll($id,true);
@@ -1571,8 +1582,7 @@ class Cortex extends Cursor {
 					foreach ($result as $el)
 						$fkeys[] = is_int($el)||ctype_digit($el)?(int)$el:(string)$el;
 					// if part of a result set
-					if ($this->collectionID && $this->smartLoading) {
-						$cx = CortexCollection::instance($this->collectionID);
+					if ($cx = $this->getCollection()) {
 						if (!$cx->hasRelSet($key)) {
 							// find all keys
 							$relKeys = ($cx->getAll($key,true));
@@ -2336,13 +2346,7 @@ class CortexCollection extends \ArrayIterator {
 
 	public function __construct() {
 		$this->cid = uniqid('cortex_collection_');
-		\Registry::set($this->cid,$this);
 		parent::__construct();
-	}
-
-	public function __destruct() {
-		// free embedded relation cache from memory
-		\Registry::clear($this->cid);
 	}
 
 	//! Prohibit cloning to ensure an existing relation cache
@@ -2363,7 +2367,7 @@ class CortexCollection extends \ArrayIterator {
 	 * @param $model
 	 */
 	function add(Cortex $model) {
-		$model->addToCollection($this->cid);
+		$model->addToCollection($this);
 		$this->append($model);
 	}
 
@@ -2522,16 +2526,6 @@ class CortexCollection extends \ArrayIterator {
 		$cc = new self();
 		$cc->setModels($records);
 		return $cc;
-	}
-
-	/**
-	 * @param $cid
-	 * @return CortexCollection
-	 */
-	static public function instance($cid) {
-		if (!\Registry::exists($cid))
-			trigger_error(sprintf(self::E_UnknownCID, $cid));
-		return \Registry::get($cid);
 	}
 
 }
