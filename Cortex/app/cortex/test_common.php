@@ -118,6 +118,65 @@ class Test_Common {
 			'collection is traversable'
 		);
 
+		$news->reset();
+		$news->load();
+		$r = $news->cast(null,0);
+		$test->expect($r['tags2']==null && is_int($r['author']),
+			'simple cast without relations');
+
+		$r = $news->cast(null,1);
+		$test->expect(is_array($r['tags2']) && is_array($r['author']),
+			'1-level nested cast');
+
+		$r = $news->cast(null,2);
+		$test->expect(is_array($r['author']['profile']),
+			'2-level nested cast');
+
+		$r = $news->cast(null,array('*'=>2));
+		$test->expect(is_array($r['author']['profile']),
+			'2-level nested cast, alternative');
+
+		$r = $news->cast(null,array(
+			'*'=>0,
+			'author'=>0
+		));
+		$test->expect(is_array($r['author']) && $r['tags2']==null
+			&& $r['author']['news']==null && $r['author']['profile']==null,
+			'custom cast');
+
+		$r = $news->cast(null,array(
+			'*'=>0,
+			'author'=>array(
+				'*'=>1
+			)
+		));
+		$test->expect(is_array($r['author']) && $r['tags2']==null
+			&& is_array($r['author']['news']) && is_array($r['author']['profile']),
+			'custom nested cast');
+
+		$r = $news->cast(null,array(
+			'*'=>0,
+			'author'=>array(
+				'*'=>0,
+				'profile'=>0
+			)
+		));
+		$test->expect(is_array($r['author']) && $r['tags2']==null
+			&& $r['author']['news']==null && is_array($r['author']['profile'])
+			&& is_int($r['author']['profile']['author']),
+			'custom nested cast with exclusions');
+
+		$r = $news->cast(null,array(
+			'*'=>0,
+			'author'=>array(
+				'*'=>0,
+				'profile'=>1
+			)
+		));
+		$test->expect(is_array($r['author']) && $r['tags2']==null
+			&& $r['author']['news']==null && is_array($r['author']['profile'])
+			&& is_array($r['author']['profile']['author']),
+			'custom multi-level nested cast');
 
 		///////////////////////////////////
 		return $test->results();

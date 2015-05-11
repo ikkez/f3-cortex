@@ -1726,7 +1726,7 @@ class Cortex extends Cursor {
 	 * Return fields of mapper object as an associative array
 	 * @return array
 	 * @param bool|Cortex $obj
-	 * @param bool|int $rel_depths depths to resolve relations
+	 * @param int|array $rel_depths depths to resolve relations
 	 */
 	public function cast($obj = NULL, $rel_depths = 1)
 	{
@@ -1735,7 +1735,9 @@ class Cortex extends Cursor {
 			foreach(array_keys($this->vFields) as $key)
 				$fields[$key]=$this->get($key);
 		if (is_int($rel_depths))
-			$rel_depths--;
+			$rel_depths = array('*'=>$rel_depths-1);
+		elseif (is_array($rel_depths))
+			$rel_depths['*'] = isset($rel_depths['*'])?--$rel_depths['*']:-1;
 		if (!empty($this->fieldConf)) {
 			$fields += array_fill_keys(array_keys($this->fieldConf),NULL);
 			if($this->whitelist)
@@ -1745,29 +1747,29 @@ class Cortex extends Cursor {
 				// post process configured fields
 				if (isset($this->fieldConf[$key]) && is_array($this->fieldConf[$key])) {
 					// handle relations
-					if (($rel_depths === TRUE || (is_int($rel_depths) && $rel_depths >= 0))
-						&& $type=preg_grep('/[belongs|has]-(to-)*[one|many]/',
+					$rd = isset($rel_depths[$key]) ? $rel_depths[$key] : $rel_depths['*'];
+					if ((is_array($rd) || $rd >= 0) && $type=preg_grep('/[belongs|has]-(to-)*[one|many]/',
 							array_keys($this->fieldConf[$key]))) {
 						$relType=$type[0];
 						// cast relations
 						$val = (($relType == 'belongs-to-one' || $relType == 'belongs-to-many')
 							&& !$mp->exists($key)) ? NULL : $mp->get($key);
 						if ($val instanceof Cortex)
-							$val = $val->cast(null, $rel_depths);
+							$val = $val->cast(null, $rd);
 						elseif ($val instanceof CortexCollection)
-							$val = $val->castAll($rel_depths);
+							$val = $val->castAll($rd);
 					}
-					// decode array fields
+					// extract array fields
 					elseif (isset($this->fieldConf[$key]['type'])) {
 						if ($this->dbsType == 'sql') {
 							if ($this->fieldConf[$key]['type'] == self::DT_SERIALIZED)
-								$val=unserialize($this->mapper->{$key});
+								$val=unserialize($mp->mapper->{$key});
 							elseif ($this->fieldConf[$key]['type'] == self::DT_JSON)
-								$val=json_decode($this->mapper->{$key}, true);
+								$val=json_decode($mp->mapper->{$key}, true);
 						}
 						if ($this->exists($key)
 							&& preg_match('/BOOL/i',$this->fieldConf[$key]['type'])) {
-							$val = (bool) $this->mapper->{$key};
+							$val = (bool) $mp->mapper->{$key};
 						}
 					}
 				}
@@ -2329,7 +2331,8 @@ class CortexQueryParser extends \Prefab {
 				}
 				if (array_key_exists('group', $options) && is_string($options['group'])) {
 					$keys = explode(',',$options['group']);
-					$options['group']=array('keys'=>array(),'initial'=>array(),'reduce'=>'function (obj, prev) {}','finalize'=>'');
+					$options['group']=array('keys'=>array(),'initial'=>array(),
+						'reduce'=>'function (obj, prev) {}','finalize'=>'');
 					$keys = array_combine($keys,array_fill(0,count($keys),1));
 					$options['group']['keys']=$keys;
 					$options['group']['initial']=$keys;
@@ -2460,7 +2463,7 @@ class CortexCollection extends \ArrayIterator {
 
 	/**
 	 * cast all contained mappers to a nested array
-	 * @param int $rel_depths depths to resolve relations
+	 * @param int|array $rel_depths depths to resolve relations
 	 * @return array
 	 */
 	public function castAll($rel_depths=1) {
