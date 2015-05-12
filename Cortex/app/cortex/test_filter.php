@@ -37,10 +37,8 @@ class Test_Filter {
 		$news->reset();
 		$author->reset();
 
-
 		// has-filter on belongs-to relation
 		///////////////////////////////////
-
 		$result = $author->has('news', array('title like ?', '%Image%'))->afind();
 
 		$test->expect(
@@ -293,6 +291,18 @@ class Test_Filter {
 			$result[1]['title'] == 'Web Design' &&
 			$result[1]['count_news'] == 1,
 			$type.': has-filter and M:M relation counter'
+		);
+
+		$news->reset();
+		$news->load();
+		$time = date('Y-m-d H:i:s');
+		$news->touch('created_at');
+		$news->save();
+		$news->reset();
+		$news->load();
+		$test->expect(
+			$time == $news->created_at,
+			$type.': update datetime field'
 		);
 
 		///////////////////////////////////

@@ -20,6 +20,9 @@ class NewsModel extends \DB\Cortex {
 				'has-many' => array('\TagModel','news','news_tags'),
 //				'has-many' => array('\TagModel','news'),
 			),
+			'created_at' => array(
+				'type' => \DB\SQL\Schema::DT_DATETIME
+			),
 		),
 //		$primary='nid',
 		$table = 'news',
