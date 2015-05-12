@@ -454,6 +454,26 @@ class Cortex extends Cursor {
 	}
 
 	/**
+	 * get mm table name from config
+	 * @param array $conf own relation config
+	 * @param string $key relation field
+	 * @param null|array $fConf optional foreign config
+	 * @return string
+	 */
+	protected function mmTable($conf, $key, $fConf=null)
+	{
+		if (!isset($conf['refTable'])) {
+			// compute mm table name
+			$mmTable = isset($conf[2]) ? $conf[2] :
+				static::getMMTableName($conf['relTable'],
+					$conf['relField'], $this->getTable(), $key, $fConf);
+			$this->fieldConf[$key]['has-many']['refTable'] = $mmTable;
+		} else
+			$mmTable = $conf['refTable'];
+		return $mmTable;
+	}
+
+	/**
 	 * resolve relation field types
 	 * @param $field
 	 * @return mixed
@@ -829,12 +849,8 @@ class Cortex extends Cursor {
 	{
 		$type = $this->fieldConf[$key]['relType'];
 		$fieldConf = $this->fieldConf[$key][$type];
-		if (!is_array($fieldConf))
-			// one-to-many shortcut
-			$fieldConf = array($fieldConf, '_id');
-		$rel = $this->getRelInstance($fieldConf[0],null,$key);
-		if($this->dbsType=='sql' && $fieldConf[1] == '_id')
-			$fieldConf[1] = $rel->primary;
+		// one-to-many shortcut
+		$rel = $this->getRelFromConf($fieldConf,$key);
 		$hasSet = $rel->find($filter, $options, $ttl);
 		if (!$hasSet)
 			return false;
@@ -858,13 +874,7 @@ class Cortex extends Cursor {
 		$result = false;
 		if ($hasSet) {
 			$hasIDs = $hasSet->getAll('_id',true);
-			if (!array_key_exists('refTable', $fieldConf)) {
-				$mmTable = isset($fieldConf[2]) ? $fieldConf[2] :
-					static::getMMTableName($fieldConf['relTable'],
-						$fieldConf['relField'], $this->getTable(), $key);
-				$this->fieldConf[$key]['has-many']['refTable'] = $mmTable;
-			} else
-				$mmTable = $fieldConf['refTable'];
+			$mmTable = $this->mmTable($fieldConf,$key);
 			$pivot = $this->getRelInstance(null,array('db'=>$this->db,'table'=>$mmTable));
 			$pivotSet = $pivot->find(array($key.' IN ?',$hasIDs),null,$ttl);
 			if ($pivotSet)
@@ -880,14 +890,7 @@ class Cortex extends Cursor {
 	{
 		$fieldConf = $this->fieldConf[$key]['has-many'];
 		$hasJoin = array();
-		if (!array_key_exists('refTable', $fieldConf)) {
-			// compute mm table name
-			$mmTable = isset($fieldConf[2]) ? $fieldConf[2] :
-				static::getMMTableName($fieldConf['relTable'],
-					$fieldConf['relField'], $this->getTable(), $key);
-			$this->fieldConf[$key]['has-many']['refTable'] = $mmTable;
-		} else
-			$mmTable = $fieldConf['refTable'];
+		$mmTable = $this->mmTable($fieldConf,$key);
 		$hasJoin[] = $this->_sql_left_join($this->primary,$this->table,$fieldConf['relField'],$mmTable);
 		$hasJoin[] = $this->_sql_left_join($key,$mmTable,$fieldConf['relPK'],$fieldConf['relTable']);
 		$this->_sql_mergeRelCondition($hasCond,$fieldConf['relTable'],$filter,$options);
@@ -1064,14 +1067,7 @@ class Cortex extends Cursor {
 			foreach($this->saveCsd as $key => $val) {
 				if($fields[$key]['relType'] == 'has-many') {
 					$relConf = $fields[$key]['has-many'];
-					if (!isset($relConf['refTable'])) {
-						// compute mm table name
-						$mmTable = isset($relConf[2]) ? $relConf[2] :
-							static::getMMTableName($relConf['relTable'],
-								$relConf['relField'], $this->getTable(), $key);
-						$this->fieldConf[$key]['has-many']['refTable'] = $mmTable;
-					} else
-						$mmTable = $relConf['refTable'];
+					$mmTable = $this->mmTable($relConf,$key);
 					$rel = $this->getRelInstance(null, array('db'=>$this->db, 'table'=>$mmTable));
 					$id = $this->get('_id',true);
 					// delete all refs
@@ -1144,14 +1140,7 @@ class Cortex extends Cursor {
 			 	if ($relConf['hasRel']=='has-many') {
 					// many-to-many
 					if ($this->dbsType == 'sql') {
-						if (!isset($relConf['refTable'])) {
-							// compute mm table name
-							$mmTable = isset($relConf[2]) ? $relConf[2] :
-								static::getMMTableName($relConf['relTable'],
-									$relConf['relField'], $this->getTable(), $key);
-							$this->fieldConf[$key]['has-many']['refTable'] = $mmTable;
-						} else
-							$mmTable = $relConf['refTable'];
+						$mmTable = $this->mmTable($relConf,$key);
 						$filter = array($this->db->quotekey($mmTable).'.'.$this->db->quotekey($relConf['relField'])
 							.' = '.$this->db->quotekey($this->getTable()).'.'.$this->db->quotekey($this->primary));
 						$from=$mmTable;
@@ -1428,12 +1417,8 @@ class Cortex extends Cursor {
 				else {
 					// get config for this field
 					$relConf = $fields[$key]['belongs-to-one'];
-					if (!is_array($relConf))
-						$relConf = array($relConf, '_id');
 					// fetch related model
-					$rel = $this->getRelInstance($relConf[0],null,$key);
-					if ($this->dbsType == 'sql' && $relConf[1] == '_id')
-						$relConf[1] = $rel->primary;
+					$rel = $this->getRelFromConf($relConf,$key);
 					// am i part of a result collection?
 					if ($cx = $this->getCollection()) {
 						// does the collection has cached results for this key?
@@ -1499,15 +1484,8 @@ class Cortex extends Cursor {
 				}
 				// many-to-many, bidirectional
 				elseif ($relType == 'has-many') {
-					if (!array_key_exists('refTable', $fromConf)) {
-						// compute mm table name
-						$toConf = $relFieldConf[$fromConf[1]]['has-many'];
-						$mmTable = isset($fromConf[2]) ? $fromConf[2] :
-							static::getMMTableName($fromConf['relTable'],
-							$fromConf['relField'], $this->getTable(), $key, $toConf);
-						$this->fieldConf[$key]['has-many']['refTable'] = $mmTable;
-					} else
-						$mmTable = $fromConf['refTable'];
+					$toConf = $relFieldConf[$fromConf[1]]['has-many'];
+					$mmTable = $this->mmTable($fromConf,$key,$toConf);
 					// create mm table mapper
 					if (!$this->get($id,true)) {
 						$this->fieldsCache[$key] = null;
@@ -1578,11 +1556,7 @@ class Cortex extends Cursor {
 				else {
 					// create foreign table mapper
 					$relConf = $fields[$key]['belongs-to-many'];
-					if (!is_array($relConf))
-						$relConf = array($relConf, '_id');
-					$rel = $this->getRelInstance($relConf[0],null,$key);
-					if ($this->dbsType == 'sql' && $relConf[1] == '_id')
-						$relConf[1] = $rel->primary;
+					$rel = $this->getRelFromConf($relConf,$key);
 					$fkeys = array();
 					foreach ($result as $el)
 						$fkeys[] = is_int($el)||ctype_digit($el)?(int)$el:(string)$el;
@@ -1719,6 +1693,21 @@ class Cortex extends Cursor {
 			if (isset($this->relWhitelist[$key][1]))
 				$rel->fields($this->relWhitelist[$key][1],true);
 		}
+		return $rel;
+	}
+
+	/**
+	 * get relation model from config
+	 * @param $fieldConf
+	 * @param $key
+	 * @return Cortex
+	 */
+	protected function getRelFromConf(&$fieldConf, $key) {
+		if (!is_array($fieldConf))
+			$fieldConf = array($fieldConf, '_id');
+		$rel = $this->getRelInstance($fieldConf[0],null,$key);
+		if($this->dbsType=='sql' && $fieldConf[1] == '_id')
+			$fieldConf[1] = $rel->primary;
 		return $rel;
 	}
 
