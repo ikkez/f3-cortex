@@ -294,17 +294,16 @@ class Test_Filter {
 		);
 
 		$news->reset();
-		$news->load();
+		$news->load(array('_id = ?',$newsIDs[0]));
 		$time = date('Y-m-d H:i:s');
 		$news->touch('created_at');
 		$news->save();
 		$news->reset();
-		$news->load();
+		$news->load(array('_id = ?',$newsIDs[0]));
 		$test->expect(
-			$time == $news->created_at,
+			substr($news->created_at,0,strlen($time)) == $time,
 			$type.': update datetime field'
 		);
-
 		///////////////////////////////////
 		return $test->results();
 	}

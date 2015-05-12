@@ -1212,10 +1212,12 @@ class Cortex extends Cursor {
 		if (isset($this->fieldConf[$key])
 			&& isset($this->fieldConf[$key]['type'])) {
 			$type = $this->fieldConf[$key]['type'];
+			$date = ($this->dbsType=='sql' && preg_match('/mssql|sybase|dblib|odbc|sqlsrv/',
+				$this->db->driver())) ? 'Ymd' : 'Y-m-d';
 			if ($type == Schema::DT_DATETIME || Schema::DT_TIMESTAMP)
-				$this->set($key,date('Y-m-d H:i:s'));
+				$this->set($key,date($date.' H:i:s'));
 			elseif ($type == Schema::DT_DATE)
-				$this->set($key,date('Y-m-d'));
+				$this->set($key,date($date));
 		}
 	}
 
