@@ -1205,6 +1205,21 @@ class Cortex extends Cursor {
 	}
 
 	/**
+	 * update a given date or time field with the current time
+	 * @param string $key
+	 */
+	public function touch($key) {
+		if (isset($this->fieldConf[$key])
+			&& isset($this->fieldConf[$key]['type'])) {
+			$type = $this->fieldConf[$key]['type'];
+			if ($type == Schema::DT_DATETIME || Schema::DT_TIMESTAMP)
+				$this->set($key,date('Y-m-d H:i:s'));
+			elseif ($type == Schema::DT_DATE)
+				$this->set($key,date('Y-m-d'));
+		}
+	}
+
+	/**
 	 * Bind value to key
 	 * @return mixed
 	 * @param $key string
