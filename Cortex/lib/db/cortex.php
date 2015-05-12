@@ -1723,6 +1723,20 @@ class Cortex extends Cursor {
 	}
 
 	/**
+	 * returns a clean/dry model from a relation
+	 * @param string $key
+	 * @return Cortex
+	 */
+	public function rel($key)
+	{
+		$rt = $this->fieldConf[$key]['relType'];
+		$rc = $this->fieldConf[$key][$rt];
+		if (!is_array($rc))
+			$rc = array($rc,'_id');
+		return $this->getRelInstance($rc[0],null,$key);
+	}
+
+	/**
 	 * Return fields of mapper object as an associative array
 	 * @return array
 	 * @param bool|Cortex $obj
