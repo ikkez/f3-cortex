@@ -1693,7 +1693,8 @@ class Cortex extends Cursor {
 		if (!$model && !$relConf)
 			trigger_error(self::E_MISSING_REL_CONF);
 		$relConf = $model ? $model::resolveConfiguration() : $relConf;
-		$relName = ($model?:'Cortex').'\\'.$relConf['db']->uuid().'\\'.$relConf['table'];
+		$relName = ($model?:'Cortex').'\\'.$relConf['db']->uuid().
+			'\\'.$relConf['table'].'\\'.$key;
 		if (\Registry::exists($relName)) {
 			$rel = \Registry::get($relName);
 			$rel->reset();
