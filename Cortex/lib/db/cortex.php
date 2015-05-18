@@ -107,7 +107,9 @@ class Cortex extends Cursor {
 			$this->dbsType = 'mongo';
 		if ($table)
 			$this->table = $table;
-		if (!$this->primary || $this->dbsType != 'sql')
+		if ($this->dbsType != 'sql')
+			$this->primary = '_id';
+		elseif (!$this->primary)
 			$this->primary = 'id';
 		if (!$this->table && !$this->fluid)
 			trigger_error(self::E_NO_TABLE);
@@ -319,8 +321,8 @@ class Cortex extends Cursor {
 									$rel['fieldConf'][$relConf[1]]['has-many']);
 							if (!in_array($mmTable,$schema->getTables())) {
 								$mmt = $schema->createTable($mmTable);
-								$mmt->addColumn($relConf[1])->type_int();
-								$mmt->addColumn($key)->type_int();
+								$mmt->addColumn($relConf[1])->type($relConf['relFieldType']);
+								$mmt->addColumn($key)->type($field['type']);
 								$index = array($relConf[1],$key);
 								sort($index);
 								$mmt->addIndex($index);
@@ -503,6 +505,8 @@ class Cortex extends Cursor {
 		}
 		elseif (array_key_exists('has-many', $field)){
 			$field['relType'] = 'has-many';
+			if (!isset($field['type']))
+				$field['type'] = Schema::DT_INT;
 			$relConf = $field['has-many'];
 			if(!is_array($relConf))
 				return $field;
@@ -511,7 +515,9 @@ class Cortex extends Cursor {
 				$field['has-many']['hasRel'] = 'has-many';
 				$field['has-many']['relTable'] = $rel['table'];
 				$field['has-many']['relField'] = $relConf[1];
-				$field['has-many']['relPK'] = $rel['primary'];
+				$field['has-many']['relFieldType'] = isset($rel['fieldConf'][$relConf[1]]['type']) ?
+					$rel['fieldConf'][$relConf[1]]['type'] : Schema::DT_INT;
+				$field['has-many']['relPK'] = isset($relConf[3])?$relConf[3]:$rel['primary'];
 			} else {
 				$field['has-many']['hasRel'] = 'belongs-to-one';
 				$toConf=$rel['fieldConf'][$relConf[1]]['belongs-to-one'];
@@ -1090,7 +1096,7 @@ class Cortex extends Cursor {
 					$relConf = $fields[$key]['has-many'];
 					$mmTable = $this->mmTable($relConf,$key);
 					$rel = $this->getRelInstance(null, array('db'=>$this->db, 'table'=>$mmTable));
-					$id = $this->get('_id',true);
+					$id = $this->get($relConf['relPK'],true);
 					// delete all refs
 					if (is_null($val))
 						$rel->erase(array($relConf['relField'].' = ?', $id));
@@ -1434,7 +1440,7 @@ class Cortex extends Cursor {
 			return $out;
 		}
 		$fields = $this->fieldConf;
-		$id = ($this->dbsType == 'sql') ? $this->primary : '_id';
+		$id = $this->primary;
 		if ($key == '_id' && $this->dbsType == 'sql')
 			$key = $id;
 		if ($this->whitelist && !in_array($key,$this->whitelist)) {
@@ -1529,6 +1535,7 @@ class Cortex extends Cursor {
 						$this->fieldsCache[$key] = null;
 						return $this->fieldsCache[$key];
 					}
+					$id = $toConf['relPK'];
 					$rel = $this->getRelInstance(null,array('db'=>$this->db,'table'=>$mmTable));
 					if ($cx = $this->getCollection()) {
 						if (!$cx->hasRelSet($key)) {
@@ -1551,7 +1558,7 @@ class Cortex extends Cursor {
 								// preload all rels
 								$pivotKeys = array_unique($pivotKeys);
 								$fRel = $this->getRelInstance($fromConf[0],null,$key,true);
-								$crit = array(($fRel->primary!='id' ? $fRel->primary : '_id').' IN ?', $pivotKeys);
+								$crit = array($toConf['relPK'].' IN ?', $pivotKeys);
 								$relSet = $fRel->find($this->mergeWithRelFilter($key, $crit),
 									$this->getRelFilterOption($key),$this->_ttl);
 								$cx->setRelSet($key, $relSet ? $relSet->getBy($id) : NULL);
@@ -1566,7 +1573,7 @@ class Cortex extends Cursor {
 					else {
 						// find foreign keys
 						$results = $rel->find(
-							array($fromConf['relField'].' = ?', $this->get($id,true)),null,$this->_ttl);
+							array($fromConf['relField'].' = ?', $this->get($fromConf['relPK'],true)),null,$this->_ttl);
 						if(!$results)
 							$this->fieldsCache[$key] = NULL;
 						else {
@@ -1575,7 +1582,7 @@ class Cortex extends Cursor {
 							unset($rel);
 							$rel = $this->getRelInstance($fromConf[0],null,$key,true);
 							// load foreign models
-							$filter = array(($rel->primary!='id' ? $rel->primary : '_id').' IN ?', $fkeys);
+							$filter = array($toConf['relPK'].' IN ?', $fkeys);
 							$filter = $this->mergeWithRelFilter($key, $filter);
 							$this->fieldsCache[$key] = $rel->find($filter,
 								$this->getRelFilterOption($key),$this->_ttl);
