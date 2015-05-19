@@ -6,7 +6,7 @@
     "license": "GPL-3.0",
     "autoload": {
 		"classmap": ["lib/"]
-    }
+    },
 	"require": {
 		"ikkez/f3-schema-builder": "2.*"
 	}
