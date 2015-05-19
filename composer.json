@@ -1,0 +1,13 @@
+{
+    "name": "ikkez/f3-cortex",
+    "description": "A multi-engine ORM / ODM for the PHP Fat-Free Framework",
+    "keywords": ["F3","fatfree","sql","ORM", "Mongo"],
+    "homepage": "https://github.com/ikkez/f3-cortex",
+    "license": "GPL-3.0",
+    "autoload": {
+		"classmap": ["lib/"]
+    }
+	"require": {
+		"ikkez/f3-schema-builder": "2.*"
+	}
+}
