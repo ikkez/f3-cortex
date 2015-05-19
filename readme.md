@@ -66,6 +66,8 @@ Cortex requires at least Fat-Free v3.4 and PHP 5.3.3. For some of the features, 
 
 To install Cortex, just copy the `/lib/db/cortex.php` file into your libs. For the SQL Schema Plugin, copy `lib/db/sql/schema.php` as well.
 
+If you use composer, all you need is to run `composer require ikkez/f3-cortex:dev-master`.
+
 ### Setup a DB
 
 Create a DB object of your choice. You can choose between [SQL](http://fatfreeframework.com/sql), [Jig](http://fatfreeframework.com/jig) or [MongoDB](http://fatfreeframework.com/mongo). Here are some examples:
