@@ -1,5 +1,22 @@
 CHANGELOG - Cortex ORM
 
+1.4.0 (xx.05.2015)
+*	experimental: nested has() propagation
+*	new: nested filter() propagation (dot-style chaining)
+*	new: composer support
+*	new: touch() method to update date, datetime and timestamp fields
+*	new: rel() method returns a new mapper of the given relation type
+*	new: fine-grained option array for casting relations
+*	refactored collection storage, uses references now
+*	use a normal INT, not BIGINT, as default for foreign keys
+*	allow custom local field on mm table
+*	Bug fix: erase collections with $filter
+*	Bug fix: getting m:m collections from dry mappers
+*	Bug fix: return dereferenced collections on loading a subset
+*	Bug fix: consider fieldConfig for new fluid fields
+*	add new many-many relation with short array push syntax
+*	and some more small fixes
+
 1.3.0 (19.01.2015)
 *	improved count() behaviour
 *	MS SQL Server fixes
