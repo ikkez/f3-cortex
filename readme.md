@@ -12,12 +12,13 @@ Cortex is a multi-engine ActiveRecord ORM / ODM that offers easy object persiste
   - Support for models and collections
   - Relationships: link multiple models together to one-to-one, one-to-many and many-to-many associations
   - smart-loading of related models (intelligent lazy and eager-loading without configuration)
+  - useful methods for nested filtering through relations 
   - automatically setup the model tables from installer or migrate scripts by defined schemes
   - lots of event handlers and custom setter / getter preprocessors for all fields
   - define default values and nullable fields for NoSQL
 
 With Cortex you can create generic apps, that work with any DB of the users choice, no matter if it's Postgre, MongoDB or even none.
-You can also mash-up multiple engines, use them simultaneous or link models of different DB engines together.
+You can also mash-up multiple engines, use them simultaneous or ~~link models of different DB engines together~~ (in development).
 
 It's great for fast and easy data abstraction and offers a bunch of useful filter possibilities.
 
@@ -60,13 +61,13 @@ It's great for fast and easy data abstraction and offers a bunch of useful filte
 
 ### System Requirements
 
-Cortex requires at least Fat-Free v3.4 and PHP 5.3.3. For some of the features, it also requires the F3 [SQL Schema Plugin](https://github.com/ikkez/F3-Sugar/tree/master-v3/SchemaBuilder).
+Cortex requires at least Fat-Free v3.4 and PHP 5.3.5. For some of the features, it also requires the F3 [SQL Schema Plugin](https://github.com/ikkez/F3-Sugar/tree/master-v3/SchemaBuilder).
 
 ### Install
 
 To install Cortex, just copy the `/lib/db/cortex.php` file into your libs. For the SQL Schema Plugin, copy `lib/db/sql/schema.php` as well.
 
-If you use composer, all you need is to run `composer require ikkez/f3-cortex:dev-master`.
+If you use **composer**, all you need is to run `composer require ikkez/f3-cortex:dev-master` and it'll include Cortex and its dependencies into your package.
 
 ### Setup a DB
 
@@ -74,9 +75,13 @@ Create a DB object of your choice. You can choose between [SQL](http://fatfreefr
 
 ```php
 // SQL - MySQL
-$db = new \DB\SQL('mysql:host=localhost;port=3306;dbname=myApp','user', 'pw');
+$db = new \DB\SQL('mysql:host=localhost;port=3306;dbname=MyAppDB','user','pw');
 // SQL - SQlite
 $db = new \DB\SQL('sqlite:db/database.sqlite');
+// SQL - PostgreSQL 
+$db = new \DB\SQL('pgsql:host=localhost;dbname=MyAppDB','user','pw');
+// SQL - SQL Server 
+$db = new \DB\SQL('sqlsrv:SERVER=LOCALHOST\SQLEXPRESS2012;Database=MyAppDB','user','pw');
 // Jig
 $db = new \DB\Jig('data/');
 // Mongo
@@ -85,7 +90,7 @@ $db = new \DB\Mongo('mongodb://localhost:27017','testdb');
 
 ### Let's get it rolling
 
-If you are familiar with F3's own Data-Mappers, you already know all about the basic CRUD operations you can do with Cortex too. It implements the ActiveRecord [Cursor Class](http://fatfreeframework.com/cursor) with all its methods. So it's that easy:
+If you are familiar with F3's own Data-Mappers, you already know all about the basic CRUD operations you can do with Cortex too. It implements the ActiveRecord [Cursor Class](http://fatfreeframework.com/cursor) with all its methods. So you can use Cortex as a **drop-in replacement** of the F3 mappers and it's basic usage will stay that simple:
 
 ```php
 $user = new \DB\Cortex($db, 'users');
@@ -94,20 +99,20 @@ $user->mail = 'jacky@email.com';
 $user->save();
 ```
 
-Okay, not very impressive, Aye? But let's find this guy again now:
+Alright, that wasn't very impressive. But now let's find this guy again:
 
 ``` php
 $user->load(array('mail = ?','jacky@email.com'));
 echo $user->name; // shouts out: Jack Ripper
 ```
 
-As you can see, the filter array stays pure SQL syntax, but will work with all DB engines. This also works for pretty complex where criteria:
+As you can see, the filter array is pure SQL syntax, that you would already use with the F3 SQL Mapper. In Cortex this will work with all 3 DB engines. Here is a little more complex `where` criteria:
 
 ```php
 $user->load(array('name like ? AND (deleted = 0 OR rights > ?)', 'Jack%', 3));
 ```
 
-No need for complex criteria objects or confusing Mongo where-array constructions. It's just as simple as you're used to. Using a Jig DB will automatically translate that query into:
+No need for complex criteria objects or confusing Mongo where-array constructions. It's just as simple as you're used to. Using a Jig DB will automatically translate that query into the appropriate Jig filter:
 
 ``` php
 Array (
@@ -125,22 +130,16 @@ Array (
         [0] => Array (
             [name] => MongoRegex Object (
                     [regex] => ^Jack
-                )
-            )
+        )   )
         [1] => Array (
             [$or] => Array (
                 [0] => Array (
-                    [deleted] =>  0
+                    [deleted] => 0
                 )
                 [1] => Array (
                     [rights] => Array (
-                            [$gt] => 3
-                        )
-                    )
-                )
-            )
-    )
-)
+                        [$gt] => 3
+)   )   )   )   )   )
 ```
 
 You can use all the fancy methods from Cursor, like `load`, `find`, `cast`, `next` or `prev`. More about filtering and all the other methods a little later.
@@ -160,7 +159,7 @@ $user->lastlogin = '2013-08-28'; // date
 
 This way it also creates data types of datetime, float, text (when `strlen > 255`) and double.
 
-The fluid mode disables the caching of the underlying SQL table schema. This could impact on performance, so keep in mind to deactivate this when you're done. Also keep in mind that you are not able to load or find any records from tables that are not existing - consider to create and save some sample data first, so Cortex can create the tables.
+**Notice:** The fluid mode disables the caching of the underlying SQL table schema. This could slightly impact on performance, so keep in mind to deactivate this when you're done. Furthermore keep in mind that you are not able to load or find any records from tables that are not existing - consider to create and save some sample data first, so Cortex can create the tables.
 
 
 ## Cortex Models
@@ -172,7 +171,6 @@ Using the Cortex class directly is easy for some CRUD operations, but to enable 
 namespace Model;
 
 class User extends \DB\Cortex {
-
   protected
     $db = 'AppDB1',     // F3 hive key of a valid DB object
     $table = 'users';   // the DB table to work on
@@ -185,8 +183,8 @@ Now you can create your mapper object that easy:
 $user = new \Model\Users();
 ```
 
-Cortex needs at least a working DB object. You can also pass this through the constructor (`new \Model\Users($db);`) and drop it in the setup.
-`$db` must be a string of a hive key where the DB object is stored, or the DB object itself.
+This is the minimal model configuration. Cortex needs at least a working DB object. You can also pass this through the constructor (`new \Model\Users($db);`) and drop it in the setup.
+`$db` must be a string of a hive key, where the DB object is stored *OR* the DB object itself.
 If no `$table` is provided, Cortex will use the class name as table name.
 
 ### Configuration
@@ -220,29 +218,30 @@ class User extends \DB\Cortex {
     $db = 'DB',
     $table = 'users'
     $fluid = true,      // triggers the SQL Fluid Mode, default: false
-    $primary = 'uid',   // name of the primary key, default: id
+    $primary = 'uid',   // name of the primary key (auto-created), default: id
     $ttl = 120,         // caching time of field schema, default: 60
-    $rel_ttl = 30;      // caching time of relations, default: 0
+    $rel_ttl = 30;      // caching time of all relations, default: 0
 }
 ```
 
-In the `$fieldConf` array, you can set data types (`type`), `nullable` flags and `default` values for your columns. Doing so enables you to install new Models into your SQL database, and adds some nullable validation checks and the ability for defaults to the NoSQL engines (Jig and Mongo).
+In the `$fieldConf` array, you can set data types (`type`), `nullable` flags and `default` values for your columns. Doing so enables you to install new Models into your SQL database, adds some nullable validation checks and the ability for defaults to the NoSQL engines (Jig and Mongo). This makes your models easy interchangeable along various databases using this loosely coupled field definitions. 
 
-Because column data types are currently only needed for setting up the tables in SQL, it follows that [SQL Data Types Table](https://github.com/ikkez/F3-Sugar/tree/master-v3/SchemaBuilder#column-class) from the [SQL Schema Plugin](https://github.com/ikkez/F3-Sugar/blob/master-v3/SchemaBuilder/lib/db/sql/schema.php).
-**You don't need to configure all fields this way.** The underlying SQL Mapper exposes the existing table schema, 
-so if you don't need that install feature and your tables are already existing, then you can just skip the configuration for those fields, or just setup some of them (i.e. for fields with relations).
+**You don't need to configure all fields this way.** If you are working on existing tables, the underlying SQL Mapper exposes the existing table schema. So if you don't need that install feature and your tables are already existing, then you can just skip the configuration for those fields, or just setup some of them (i.e. for fields with relations).
 
-You may also extend this config array to have a place for own validation rules or whatever.
+Because column data types are currently only needed for setting up the tables in SQL, it follows that [SQL Data Types Table](https://github.com/ikkez/f3-schema-builder/tree/master#column-class) from the required [SQL Schema Plugin](https://github.com/ikkez/f3-schema-builder/blob/master/lib/db/sql/schema.php).
+
+You may also extend this config array to have a place for own validation rules or whatever you like.
 
 The data type values are defined constants from the Schema Plugin. If you'd like to use some auto-completion in your IDE to find the right values, type in the longer path to the constants:
 
 ``` php
-'type' => \DB\SQL\Schema::DT_VARCHAR256,
+'type' => \DB\SQL\Schema::DT_TIMESTAMP,
+'default' => \DB\SQL\Schema::DF_CURRENT_TIMESTAMP,
 ```
 
 #### Additional Data Types
 
-Cortex comes with two own data types for handling array values in fields. Even when Jig and Mongo support them naturally, most SQL engines do not. Therefore Cortex introduces:
+Cortex comes with two own data types for handling array values in fields. Even when Jig and Mongo support them naturally, most SQL engines do not yet. Therefore Cortex introduces:
 
 + `DT_SERIALIZED`
 + `DT_JSON`
@@ -257,22 +256,25 @@ In example:
 ),
 ```
 
-Now you're able to save array data in your model field, which is json_encoded behind the scene (of cause only when using a SQL backend).
+Now you're able to save array data in your model field, which is json_encoded into a `text` field behind the scene (of cause only when using a SQL backend).
 
 ``` php
 $mapper->colors = array('red','blue','green');
 ```
 
 
-#### Alternative Configuration Method
+#### Alternative Configuration
 
-In case you need some more flexible configurations and don't want to hard-wire it, you can overload the Model class constructor to load its config from an `ini`-file or elsewhere. In example:
+In case you need some more flexible configuration and don't want to hard-wire it, you can overload the Model class constructor to load its config from an `ini`-file or elsewhere. In example:
 
 ``` php
 class User extends \DB\Cortex {
 
     function __construct() {
+        // get the DB from elsewhere
+        $this->db = \Registry::get('DB');
         $f3 = \Base::instance();
+        // load fields from .ini file
         if(!$f3->exists('usermodel'))
             $f3->config('app/models/usermodel.ini');
         foreach ($f3->get('usermodel') as $key => $val)
@@ -286,7 +288,6 @@ And in your `usermodel.ini` file:
 
 ``` ini
 [globals]
-usermodel.db = AppDB1
 usermodel.table = users
 usermodel.fieldConf.name.type = VARCHAR256
 usermodel.fieldConf.name.nullable = FALSE
@@ -300,7 +301,7 @@ usermodel.fieldConf.rights_level.default = 3
 
 The `field()` method can be used to return the available fields on the current model. If called with one simple array argument like `$news->fields(array('title'));`, it'll apply the provided elements as a whitelist to the whole mapper. For the rest of its lifetime it'll only hydrate the fields you permitted here.
 If called with a 2nd argument like `$news->fields(array('author'),true);`, the array is going to be uses as a blacklist instead, and restrict the access to the provided fields.
-You can also define deep nested fields using a dot as separator: `$news->fields(array('tags.title'));` will only hydrate the tag title in your news model and wont load or save any other field that exists in your tag model.
+You can also define deep nested fields using a **dot** as separator: `$news->fields(array('tags.title'));` will only hydrate the tag title in your news model and wont load or save any other field that exists in your tag model. Subsequent calls to the `fields` method will merge with all already defined blacklist/whitelist definitions.
 
 
 ### Set up

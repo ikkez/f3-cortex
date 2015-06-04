@@ -1,6 +1,6 @@
 CHANGELOG - Cortex ORM
 
-1.4.0 (xx.05.2015)
+1.4.0 (04.06.2015)
 *	experimental: nested has() propagation
 *	new: nested filter() propagation (dot-style chaining)
 *	new: composer support
