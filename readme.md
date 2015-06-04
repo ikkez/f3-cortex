@@ -492,13 +492,16 @@ To save many collections to a model you've got several ways:
 $news->load(array('_id = ?',1));
 
 // array of IDs from TagModel
-$news->tags2 = array(12, 5);
+$news->tags = array(12, 5);
 // OR a split-able string
-$news->tags2 = '12;5;3;9'; // delimiter: [,;|]
+$news->tags = '12;5;3;9'; // delimiter: [,;|]
 // OR an array of single mapper objects
 $news->tags = array($tag,$tag2,$tag3);
 // OR a hydrated mapper that may contain multiple results
-$news->tags2 = $tag->load(array('_id != ?',42));
+$news->tags = $tag->load(array('_id != ?',42));
+
+// you can also add a single tag to your existing tags
+$news->tags[] = $tag->load(array('_id = ?',23));
 
 $news->save();
 ```
@@ -507,8 +510,8 @@ Now you can get all tags of a news entry:
  
 ``` php
 $news->load(array('_id = ?',1));
-echo $news->tags2[0]['title']; // Web Design
-echo $news->tags2[1]['title']; // Responsive
+echo $news->tags[0]['title']; // Web Design
+echo $news->tags[1]['title']; // Responsive
 ```
 
 And all news that are tagged with *Responsive*:
@@ -693,6 +696,24 @@ The same way like the `has()` method does, you can add multiple filter condition
 Once a `load` or `find` function is executed, the filter (and has) conditions are cleared for the next upcoming query.
 
 Filter conditions are currently not inherited. That means if you recursively access the fields of a relation ($author->news[0]->author->news) they get not filtered, but fully lazy loaded again.
+
+### propagation
+
+It is also possible to filter deep nested relations using the `.` dot style syntax. The following example finds all authors and only loads its news that are tagged with "Responsive":
+
+``` php
+$author->filter('news.tags', array('title = ?','Responsive'));
+$author->find();
+```
+
+The same applies for the has filter. The next example is similar to the previous one, but this time, instead of finding all authors, it only returns authors that have written a news entry that was tagged with "Responsive":
+
+``` php
+$author->has('news.tags', array('title = ?','Responsive'));
+$author->find();
+```
+
+**Notice:** These nested filter techniques are still experimental, so please handle with care and test your application well.
 
 
 ## Insight into aggregation
