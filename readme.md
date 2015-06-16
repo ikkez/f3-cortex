@@ -49,25 +49,25 @@ It's great for fast and easy data abstraction and offers a bunch of useful filte
 8. [Insight into aggregation](#insight-into-aggregation)
 	1. [Counting Relations](#counting-relations)
 	2. [Virtual Fields](#virtual-fields)
-9. [Collections](#collections)
+9. [Mapper API](#mapper-api)
+9. [Collection API](#collection-api)
 10. [Additional notes](#additional-notes)
 11. [Known Issues](#known-issues)
 12. [Roadmap](#roadmap)
-13. [Final Words](#final-words)
-14. [License](#license)
+13. [License](#license)
     
 
 ## Quick Start
 
 ### System Requirements
 
-Cortex requires at least Fat-Free v3.4 and PHP 5.3.5. For some of the features, it also requires the F3 [SQL Schema Plugin](https://github.com/ikkez/F3-Sugar/tree/master-v3/SchemaBuilder).
+Cortex requires at least Fat-Free v3.4 and PHP 5.3.5. For some of the features, it also requires the F3 [SQL Schema Plugin](https://github.com/ikkez/f3-schema-builder/tree/master).
 
 ### Install
 
 To install Cortex, just copy the `/lib/db/cortex.php` file into your libs. For the SQL Schema Plugin, copy `lib/db/sql/schema.php` as well.
 
-If you use **composer**, all you need is to run `composer require ikkez/f3-cortex:dev-master` and it'll include Cortex and its dependencies into your package.
+If you use **composer**, all you need is to run `composer require ikkez/f3-cortex:1.*` and it'll include Cortex and its dependencies into your package.
 
 ### Setup a DB
 
@@ -749,36 +749,759 @@ $user->virtual('full_name', function($this) {
 });
 ```
 
-You can also use this to count or sum fields together and even reorder you collection on this fields using `$collection->orderBy('foo DESC, bar ASC')`. Keep in mind that these virtual fields only applies to your final received collection - you cannot use these fields in your filter query or sort condition before the actual find. But if you use a SQL engine, you can use the underlying mapper abilities of virtual fields - just set `$mapper->newField = 'SQL EXPRESSION';` before any load or find operation happens.
+You can also use this to count or sum fields together and even reorder you collection on this fields using `$collection->orderBy('foo DESC, bar ASC')`. Keep in mind that these virtual fields only applies to your final received collection - you cannot use these fields in your filter query or sort condition before the actual find. But if you use a SQL engine, you can use the underlying mapper abilities of virtual adhoc fields - just set `$mapper->newField = 'SQL EXPRESSION';` before any load or find operation is made.
 
 
-## Collections
+## Mapper API
+
+### $db
+**DB object**
+ 
+Can be an object of [\DB\SQL](http://fatfreeframework.com/sql), [\DB\Jig](http://fatfreeframework.com/jig) or [\DB\Mongo](http://fatfreeframework.com/sql),
+*OR* a string containing a HIVE key where the actual database object is stored at.
+
+### $table
+**table to work with**, string
+
+If the table is not set, Cortex will use the `strtolower(get_class($this))` as table name.
+
+### $fluid
+**trigger SQL fluid schema mode**, boolean = false
+
+### $fieldConf
+**field configuration**, array
+
+The array scheme is:
+
+```php
+protected $fieldConf = array {
+    'fieldName' = array(
+        'type' => string
+        'nullable' => bool
+        'default' => mixed
+    )
+};
+```
+
+Get the whole list of possible types from the [Data Types Table](https://github.com/ikkez/f3-schema-builder/tree/master#column-class).
+
+### $ttl
+**default mapper schema ttl**, int = 60
+
+This only affects the schema caching of the SQL mapper.
+
+### $rel_ttl
+**default mapper rel ttl**, int = 0
+
+This setting in your model will add a caching to all relational queries
+
+### $primary
+**SQL table primary key**, string
+
+Defines the used primary key of the table. Default is `id` for SQL engine, and *always* `_id` for JIG and Mongo engines. 
+ The setup method respects this value for creating new SQL tables in your database and has to be an integer column.
+
+### load
+**Retrieve first object that satisfies criteria**
+
+```php
+Cortex load([ array $filter = NULL [, array $options = NULL [, int $ttl = 0 ]]])
+```
+
+Simple sample to load a user:
+
+```php
+$user->load(array('username = ?','jacky'));
+if (!$user->dry()) {
+    // user was found and loaded
+    echo $user->username;
+} else {
+    // user was not found
+}
+```
+
+When called without any parameter, it loads the first record from the database.
+
+
+### loaded
+**Count records that are currently loaded**
+
+```php
+int loaded()
+```
+
+Sample:
+
+```php
+$user->load(array('last_name = ?','Johnson'));
+echo $user->loaded(); // 3
+```
+
+### first, last, next, prev, skip
+**Methods to navigate the cursor position and map a record**
+
+See [http://fatfreeframework.com/cursor#CursorMethods](http://fatfreeframework.com/cursor#CursorMethods).
+
+```php
+$user->load(array('last_name = ?','Johnson'));
+echo $user->loaded(); // 3
+echo $user->_id; // 1
+$user->last();
+echo $user->_id; // 3
+echo $user->prev()->_id; // 2
+echo $user->first()->_id; // 1
+echo $user->skip(2)->_id; // 3
+```
+
+
+### cast
+**Return fields of mapper object as an associative array**
+
+```php
+int cast ([ Cortex $obj = NULL [, int $rel_depths = 1]])
+```
+
+A simple cast sample. If the user model contains relations, they are also casted for 1 level depth by default:
+
+```php
+$user->load(array('_id = ?',3));
+var_dump($user->cast());
+/* Array (
+    [_id] => 3
+    [first_name] => Steve
+    [last_name] => Johnson
+    [comments] => Array(
+        [1] => Array (
+            [_id] = 23
+            [post] => 2
+            [message] => Foo Bar
+        ),
+        [2] => Array (
+            [_id] = 28
+            [post] => 3
+            [message] => Lorem Ipsun
+        )
+    )
+)*/
+```
+
+If you increase the `$rel_depths` value, you can also resolve further relations down the road:
+ 
+```php
+var_dump($user->cast(NULL, 2));
+/* Array (
+    ...
+    [comments] => Array(
+        [1] => Array (
+            [_id] = 23
+            [post] => Array(
+                [_id] => 2
+                [title] => Kittenz
+                [text] => ... 
+            )
+            [message] => Foo Bar
+        ),
+        ...
+    )
+)*/
+```
+
+
+If you only want particular relation fields to be resolved, you can set an array to the `$rel_depths` parameter, with the following schema:
+
+```php
+$user->cast(NULL, array(
+  '*' => 0      // cast all own relations to the given depth, 
+                // 0 doesn't cast any relation (default if this key is missing)
+  'modelA' => 0 // if a relation key is defined here, modelA is being loaded and casted,
+                // but not its own relations, because the depth is 0 for it
+  'modelB' => 1 // modelB and all it's relations at the first level will be loaded and casted
+  'modelC' => array(...) // you can recursively extend this cast array scheme
+));
+
+// simple sample: only cast yourself and the author model without its childs 
+$news->cast(NULL,array(
+    '*'=>0,
+    'author'=>0
+));
+
+// nested sample: only cast yourself, your own author relation with its profile and all profile relations 
+$news->cast(NULL,array(
+    '*'=>0,
+    'author'=>array(
+        '*'=>0,
+        'profile'=>1
+    )
+));
+```
+
+If you don't want any relation to be resolved and casted, just set `$rel_depths` to `0`.
+Any one-to-many relation field then just contains the `_id` (or any other custom field binding from [$fieldConf](#$fieldConf)) of the foreign record,
+many-to-one and many-to-many fields are just empty. 
+
+
+
+### castField
+**Cast a related collection of mappers**
+
+```php
+array|null castField( string $key [, int $rel_depths = 0 ])
+```
+
+
+### find
+**Return a collection of objects matching criteria**
+
+```php
+CortexCollection|false find([ array $filter = NULL [, array $options = NULL [, int $ttl = 0 ]]])
+```
+
+The resulting CortexCollection implements the ArrayIterator and can be treated like a usual array.
+
+### findone
+**Return first record (mapper object) that matches criteria**
+
+```php
+Cortex|false findone([ array $filter = NULL [, array $options = NULL [, int $ttl = 0 ]]])
+```
+
+This method is inherited from the [Cursor](http://fatfreeframework.com/cursor) class. 
+
+### afind
+**Return an array of result arrays matching criteria**
+
+```php
+array|null find([ array $filter = NULL [, array $options = NULL [, int $ttl = 0 [, int|array $rel_depths = 1 ]]]])
+```
+
+Finds a whole collection, matching the criteria and casts all mappers into an array, based on the `$rel_depths` configuration. 
+
+
+### addToCollection
+**Give this model a reference to the collection it is part of**
+
+```php
+null addToCollection( CortexCollection $cx )
+```
+
+
+### onload, aftererase, afterinsert, aftersave, afterupdate, beforeerase, beforeinsert, beforesave, beforeupdate
+**Define an event trigger**
+
+```php
+callback onload( callback $func )
+```
+
+See the guide about [Event Handlers](#event-handlers) for more details.
+
+### onget, onset
+**Define a custom field getter/setter**
+
+```php
+callback onget( string $field, callback $func )
+```
+
+See the guide about [Custom Field Handler](#custom-field-handler) for more details.
+
+### clear
+**Clear any mapper field or relation**
+
+```php
+null clear( string $key )
+```
+
+### clearFilter
+**Removes one or all relation filter**
+
+```php
+null clearFilter([ string $key = null ])
+```
+
+Removes only the given `$key` filter or all, if none was given.
+
+
+### copyfrom
+**Hydrate the mapper from hive key or given array**
+
+```php
+null copyfrom( string|array $key [, callback|array|string $fields = null ])
+```
+
+Use this method to set multiple values to the mapper at once. 
+The `$key` parameter must be an array or a string of a hive key, where the actual array can be found.
+
+The `$fields` parameter can be a splittable string:
+ 
+```php
+$news->copyfrom('POST','title;text');
+```
+
+Or an array:
+
+```php
+$news->copyfrom('POST',array('title','text'));
+```
+
+Or a callback function, which is used to filter the input array:
+
+
+```php
+$news->copyfrom('POST',function($fields) {
+    return array_intersect_key($fields,array_flip(array('title','text')));
+});
+```
+
+### copyto
+**Copy mapper values into hive key**
+
+```php
+null copyto( string $key [, array|string $relDepth = 0 ])
+```
+
+
+### count
+**Count records that match criteria**
+
+```php
+null count([ null $filter [, int $ttl = 60 ]])
+```
+
+Just like `find()` but it only executes a count query instead of the real select.
+
+
+### countRel
+**add a virtual field that counts occurring relations**
+
+```php
+null countRel( string $key)
+```
+
+The `$key` parameter must be an existing relation field name. This adds a virtual counter field to your result,
+which contains the count/sum of the matching relations to the current record, which is named `count_{$key}`.
+ 
+
+### dbtype
+**Returns the currently used db type**
+
+```php
+string dbtype()
+```
+
+The type is `SQL`, `Mongo` or `Jig`.
+
+### dry
+**Return TRUE if current cursor position is not mapped to any record**
+
+```php
+bool dry()
+```
+
+Sample:
+
+```php
+$mapper->load(array('_id = ?','234'));
+if ($mapper->dry()) {
+    // not found
+} else {
+    // record was loaded
+}
+```
+
+### erase
+**Delete object/s and reset ORM**
+
+```php
+null erase([ array $filter = null ])
+```
+
+When a `$filter` parameter is set, it deletes all matching records:
+
+```php
+$user->erase(array('deleted = ?', 1));
+```
+ 
+It deletes the loaded record when called on a hydrated mapper without `$filter` parameter:
+
+```php
+$user->load(array('_id = ?',6));
+$user->erase();
+```
+
+This also calls the `beforeerase` and `aftererase` events.  
+
+### exists
+**Check if a certain field exists in the mapper or is a virtual relation field**
+
+```php
+bool exists( string $key [, bool $relField = false ])
+```
+
+If `$relField` is true, it also checks the [$fieldConf](#$fieldConf) for defined relational fields.
+
+
+### fields
+**get fields or set whitelist / blacklist of fields**
+
+```php
+array fields([ array $fields = array() [, bool $exclude = false ])
+```
+
+When you call this method without any parameter, it returns a list of available fields from the schema.
+
+```php
+var_dump( $user->fields() );
+/* Array(
+    '_id'
+    'username'
+    'password'
+    'email'
+    'active'
+    'deleted'
+)*/
+```
+
+If you set a `$fields` array, it'll enable the field whitelisting, and put the given fields to that whitelist. 
+All non-whitelisted fields on loaded records are not available, visible nor accessible anymore. This is useful when you don't want certain fields in a returned casted array.
+
+```php
+$user->fields(array('username','email')); // only those fields
+$user->load();
+var_dump($user->cast());
+/* Array(
+    '_id' => 5
+    'username' => joe358
+    'email' => joe@domain.com
+)*/
+```
+
+Calling this method will re-initialize the mapper and takes effect on any further load or find action, so run this first of all.
+
+If you set the `$exclude` parameter to `true`, it'll also enable the whitelisting, but set all available fields, without the given, to the whitelist. 
+In other words, the given $fields become blacklisted, the only the remaining fields stay visible. 
+
+```php
+$user->fields(array('email'), true); // all fields, but not these
+$user->load();
+var_dump($user->cast());
+/* Array(
+    '_id' => 5
+    'username' => joe358
+    'password' => $18m$fsk555a3f2f08ff28
+    'active' => 1
+    'deleted' => 0
+)*/
+```
+
+In case you have relational fields configured on the model, you can also prohibit access for the fields of that relations. For that use the dot-notation:
+
+```php
+$comments->fields(array('user.password'), true); // exclude the password field in user model
+$comments->load();
+var_dump($comments->cast());
+/* Array(
+    '_id' => 53
+    'message' => ....
+    'user' => Array(
+        '_id' => 5
+        'username' => joe358
+        'active' => 1
+        'deleted' => 0
+    ) 
+)*/
+```
+
+You can call this method multiple times in conjunction. It'll always merge with your previously set white and blacklisted fields.
+`_id` is always present.
+
+
+### filter
+**Add filter for loading related models**
+
+```php
+Cortex filter( string $key [, array $filter = null [, array $options = null ]])
+```
+
+See [Advanced Filter Techniques](#advanced-filter-techniques).
+
+### get
+**Retrieve contents of key**
+
+```php
+mixed get( string $key [, bool $raw = false ])
+```
+
+If `$raw` is `true`, it'll return the raw data from a field as is. No further processing, no relation is resolved, no get-event fired.
+Useful if you only want the raw foreign key value of a relational field.
+
+
+### getFieldConfiguration
+**Returns model $fieldConf array**
+
+```php
+array|null getFieldConfiguration()
+```
+
+### getTable
+**returns model table name**
+
+```php
+string getTable()
+```
+
+If no table was defined, it uses the current class name to lowercase as table name.
+
+### has
+**Add has-conditional filter to next find call**
+
+```php
+Cortex has( string $key [, array $filter = null [, array $options = null ]])
+```
+
+See [Advanced Filter Techniques](#advanced-filter-techniques).
+
+
+### paginate
+**Return array containing subset of records matching criteria**
+
+```php
+array paginate([ int $pos = 0 [, int $size = 10 [, array $filter = NULL [, array $options = NULL [, int $ttl = 0 ]]]]])
+```
+
+See [Cursor->paginate](http://fatfreeframework.com/cursor#paginate). Any *has* and *filter* filters can be used in conjunction with paginate as well. 
+
+
+### rel
+**returns a clean/dry model from a relation**
+
+```php
+Cortex rel( string $key )
+```
+
+
+### reset
+**reset and re-initialize the mapper**
+
+```php
+null reset([ bool $mapper = true ])
+```
+
+If `$mapper` is *false*, it only reset filter, default values and internal caches of the mapper, but leaves the hydrates record untouched.
+
+
+### resolveConfiguration
+**kick start mapper to fetch its config**
+
+```php
+array resolveConfiguration()
+```
+
+Returns an array that exposes a mapper configuration. The array includes:
+
+*	table
+*	fieldConf
+*	db
+*	fluid
+*	primary
+
+
+### save
+**Save mapped record**
+
+It is recommended to always use the save method. It'll automatically see if you want to save a new record or update an existing, loaded record.
+
+```php
+$user->username = 'admin'
+$user->email = 'admin@domain.com';
+$user->save(); // insert
+
+$user->reset();
+$user->load(array('username = ?','admin'));
+$user->email = 'webmaster@domain.com';
+$user->save(); // update
+```
+
+The save method also fires the `beforeinsert`, `beforeupdate`, `afterinsert` and `afterupdate` events. 
+There are also `insert`and `update`method, but using that methods directly, will skip the events and any cascading actions.
+
+
+### set
+**Bind value to key**
+
+```php
+mixed set( string $key, mixed $val )
+```
+
+### setdown
+**erase all model data, handle with care**
+
+```php
+null setdown([ object|string $db = null [, string $table = null ]])
+```
+
+This method completely drops the own table, and used many-to-many pivot-tables from the database. 
+
+
+### setFieldConfiguration
+**set model definition**
+
+```php
+null setFieldConfiguration( array $config )
+```
+
+Used to set the **$fieldConf** array.
+
+
+### setup
+**setup / update table schema**
+
+```php
+bool setup([ object|string $db = null [, string $table = null [, array $fields = null ]]])
+```
+
+This method creates the needed tables for the model itself and additionally required pivot tables. It uses the internal model properties *$db*, *$table* and *fieldConf*, 
+but can also be fed with method parameters which would take precedence. 
+
+
+### touch
+**update a given date or time field with the current time**
+
+```php
+null touch( string $key )
+```
+
+If `$key` is a defined field in the *$fieldConf* array, and is a type of date, datetime or timestamp,
+this method updates the field to the current time/date in the appropriate format.
+
+
+### valid
+**Return whether current iterator position is valid.**
+
+```php
+bool valid()
+```
+
+### virtual
+**virtual mapper field setter**
+
+```php
+null virtual( string $key, mixed $val )
+```
+
+This sets a custom virtual field to the mapper. Useful for some on-demand operations:
+
+```php
+$user->virtual('pw_unsecure', function($this) {
+    return \Bcrypt::instance()->needs_rehash($this->password, 10);
+});
+```
+
+It is possible to use the virtual fields for a post-sorting on a selected collection, see [virtual fields](#virtual-fields).
+
+
+## Collection API
 
 Whenever you use the `find` method, it will return an instance of the new CortexCollection class. This way we are able determine the whole collection from the inside of every single mapper in the results, and that gives us some more advanced features, like the [smart-loading of relations](https://github.com/ikkez/F3-Sugar/issues/23#issuecomment-24956163). The CortexCollection implements the `ArrayIterator` interface, so it is accessible like an usual array. Here are some of the most useful methods the Cortex Collection offers:
 
+### add
+**add single model to collection**
+
+```php
+null add( Cortex $model )
+```
+
+### castAll
+**cast all contained mappers to a nested array**
+
+```php
+array castAll([ $reldepths = 1 ])
+```
+
+Similar to the `Cortex->cast` method for a single mapper, this automatically casts all containing mappers to a simple nested array.
+
+```php
+$result = $news->find(array('published = ?',true));
+if ($result)
+    $json = json_encode($result->castAll());
+```
+
+Use the `$reldepths` parameter to define what to cast, see [cast](#cast) method for details.
+
+### expose
+**return internal array representation**
+
+```php
+array expose()
+```
+
+### factory
+**create a new collection instance from given records**
+
+```php
+CortexCollection factory( array $records )
+```
+
+`$records` must be an array, containing Cortex mapper objects.
+
+### getAll
+**returns all values of a specified property from all models**
+
+```php
+array getAll( string $prop [, bool $raw = false ])
+```
+
+You can fetch all values of a certain key from all containing mappers using `getAll()`. Set the 2nd argument to `true` the get only the raw DB results instead of resolved mappers on fields that are configured as a relation.
+
 ### getBy
+
+```php
+array getBy( string $index [, bool $nested = false ])
+```
 
 You can transpose the results by a defined key using `getBy()`.
 Therefore you need to provide an existing field in the mapper, like this;
  
- ```php
- $comment_result = $comments->find();
- $comment_result->getBy('email');
- ```
+```php
+$pages = $page->find();
+$pages_by_slug = $pages->getBy('slug');
+```
  
- This will resort the resulting array by the email field of each mapper, which gives you a result array like `array("foo@domain.com"=>array(...))`. If you provide `true` as 2nd argument, the records are ordered into another array depth, to keep track of multiple results per key.
+This will resort the resulting array by the email field of each mapper, which gives you a result array like `array("foo@domain.com"=>array(...))`. If you provide `true` as 2nd argument, the records are ordered into another array depth, to keep track of multiple results per key.
  
-### getAll
+### hasChanged
+**returns true if any model was modified after it was added to the collection**
 
-You can fetch all values of a certain key from all containing mappers using `getAll()`. Set the 2nd argument to `true` the get only the raw DB results instead of resolved mappers on fields that are configured as a relation.
-
-### castAll
-
-Similar to the `Cortex->afind` method, which automatically cast all resulting mappers to a simple nested array.
+```php
+bool hasChanged()
+```
 
 ### orderBy
+**re-assort the current collection using a sql-like syntax**
+
+```php
+array getBy( string $index [, bool $nested = false ])
+```
 
 If you need to re-sort a result collection once more to another key, use this method like `$results->orderBy('name DESC');`.
+
+
+### setModels
+**set a collection of models**
+
+```php
+array setModels( array $models [, bool $init = true ])
+```
+
+This adds multiple Cortex objects to the own collection. When `$init` is false, added models with this method wont effect the **changed** state. 
+
+### slice
+**slice the collection**
+
+```php
+null slice( int $offset [, int $limit = null ])
+```
+
+This removes a part from the collection.
+
 
 
 ## Additional notes
@@ -797,11 +1520,9 @@ If you need to re-sort a result collection once more to another key, use this me
 
 * primary fields should not be included in the `$fieldConf` array. They could interfere with the [setup](#set-up) routine.
 
-* the `copyfrom` method has extended functionality. The 1st argument accepts a hive key or an array of fields as source for the copy action. Its 2nd argument accepts a lambda function, an array of fields, or a split-able string for fields, that are used to filter the source array. 
-
 * There are some little behaviours of Cortex you can control by these hive keys:
 
-	* `CORTEX.queryParserCache`: if `TRUE` all query string are going to be cached too. Default: `FALSE` (may add a lot of cache entries)
+	* `CORTEX.queryParserCache`: if `TRUE` all query strings are going to be cached too (may add a lot of cache entries). Default: `FALSE`
 
 	* `CORTEX.smartLoading`: triggers the intelligent-lazy-eager-loading. Default is `TRUE`, but turn it off if you think something works wrong. Could cause a lot of extra queries send to your DB, if deactivated.
 
@@ -815,15 +1536,12 @@ If you find any issues or bugs, please file a [new Issue](https://github.com/ikk
 
 ## Roadmap
 
-I got a bunch of tasks on my todo list for cortex. If you have any ideas, suggestions or improvements, feel free to add an issue for this on github.
+If you have any ideas, suggestions or improvements, feel free to add an issue for this on github.
 
 
-## Final Words
+Cortex currently only reflects to the most common use cases. If you need more extensive control over your queries or the DB, you may consider to use the underlying mapper or DB directly. This could be done in custom methods or field preprocessors in your Model classes.
 
-Cortex may try to bind them all, but at least it's not the one ring from Mordor!
-So by the nature of a general purpose tool, it currently only reflects to the most common use cases. If you need more extensive control over your queries or the DB, you may consider to use the underlying mapper or DB directly. This could be done in custom methods or field preprocessors in your Model classes.
-
-Anyways, i hope you find this useful. If you like this plugin, why not make a donation?
+Anyways, I hope you find this useful. If you like this plugin, why not make a donation?
 
 [![buy me a Beer](https://dl.dropboxusercontent.com/u/3077539/Beer/bdb_small_single.png)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=44UHPNUCVP7QG)
 
