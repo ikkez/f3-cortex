@@ -858,10 +858,10 @@ echo $user->skip(2)->_id; // 3
 **Return fields of mapper object as an associative array**
 
 ```php
-int cast ([ Cortex $obj = NULL [, int $rel_depths = 1]])
+array cast ([ Cortex $obj = NULL [, int $rel_depths = 1]])
 ```
 
-A simple cast sample. If the user model contains relations, they are also casted for 1 level depth by default:
+A simple cast sample. If the model contains relations, they are also casted for 1 level depth by default:
 
 ```php
 $user->load(array('_id = ?',3));
@@ -915,7 +915,7 @@ $user->cast(NULL, array(
                 // 0 doesn't cast any relation (default if this key is missing)
   'modelA' => 0 // if a relation key is defined here, modelA is being loaded and casted,
                 // but not its own relations, because the depth is 0 for it
-  'modelB' => 1 // modelB and all it's relations at the first level will be loaded and casted
+  'modelB' => 1 // modelB and all it's 1st level relations are loaded and casted
   'modelC' => array(...) // you can recursively extend this cast array scheme
 ));
 
@@ -925,7 +925,8 @@ $news->cast(NULL,array(
     'author'=>0
 ));
 
-// nested sample: only cast yourself, your own author relation with its profile and all profile relations 
+// nested sample: only cast yourself, 
+// your own author relation with its profile and all profile relations 
 $news->cast(NULL,array(
     '*'=>0,
     'author'=>array(
@@ -936,7 +937,7 @@ $news->cast(NULL,array(
 ```
 
 If you don't want any relation to be resolved and casted, just set `$rel_depths` to `0`.
-Any one-to-many relation field then just contains the `_id` (or any other custom field binding from [$fieldConf](#$fieldConf)) of the foreign record,
+Any one-to-many relation field then just contains the `_id` (or any other custom field binding from [$fieldConf](#fieldConf)) of the foreign record,
 many-to-one and many-to-many fields are just empty. 
 
 
@@ -1136,7 +1137,7 @@ This also calls the `beforeerase` and `aftererase` events.
 bool exists( string $key [, bool $relField = false ])
 ```
 
-If `$relField` is true, it also checks the [$fieldConf](#$fieldConf) for defined relational fields.
+If `$relField` is true, it also checks the [$fieldConf](#fieldConf) for defined relational fields.
 
 
 ### fields
