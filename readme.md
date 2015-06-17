@@ -957,7 +957,18 @@ array|null castField( string $key [, int $rel_depths = 0 ])
 CortexCollection|false find([ array $filter = NULL [, array $options = NULL [, int $ttl = 0 ]]])
 ```
 
-The resulting CortexCollection implements the ArrayIterator and can be treated like a usual array.
+The resulting CortexCollection implements the ArrayIterator and can be treated like a usual array. All filters and counters which were set before are used once `find` is called:
+
+```php
+// find published #web-design news, sorted by approved user comments
+$news->has('tags',array('slug = ?','web-design'));
+$news->filter('comments', array('approved = ?',1));
+$news->countRel('comments');
+$records = $news->find(
+	array('publish_date <= ? and published = ?', date('Y-m-d'), true),
+	array('order' => 'count_comments desc')
+);
+```
 
 ### findone
 **Return first record (mapper object) that matches criteria**
@@ -1079,7 +1090,16 @@ null countRel( string $key)
 
 The `$key` parameter must be an existing relation field name. This adds a virtual counter field to your result,
 which contains the count/sum of the matching relations to the current record, which is named `count_{$key}`.
- 
+
+You can also use this counter for sorting, like in this tag-cloud sample:
+
+```php
+$tags = new \Model\Tag();
+$tags->filter('news',array('published = ? and publish_date <= ?', true, date('Y-m-d')));
+$tags->countRel('news');
+$result = $tags->find(array('deleted = ?',0), array('order'=>'count_news desc'));
+```
+
 
 ### dbtype
 **Returns the currently used db type**
