@@ -1278,6 +1278,15 @@ See [Cursor->paginate](http://fatfreeframework.com/cursor#paginate). Any *has* a
 Cortex rel( string $key )
 ```
 
+For instance, if `comments` is a one-to-many relation to `\Model\Comment`:
+
+```php
+$user->load();
+var_dump($user->comments); // array of comments
+$new_comment = $user->rel('comments'); 
+// $new_comment is a new empty \Model\Comment
+```
+
 
 ### reset
 **reset and re-initialize the mapper**
@@ -1381,6 +1390,18 @@ this method updates the field to the current time/date in the appropriate format
 bool valid()
 ```
 
+It's the counterpart to [dry()](#dry).
+
+```php
+$mapper->load(array('_id = ?','234'));
+if ($mapper->valid()) {
+    // record was loaded
+} else {
+    // not found
+}
+```
+
+
 ### virtual
 **virtual mapper field setter**
 
@@ -1409,6 +1430,17 @@ Whenever you use the `find` method, it will return an instance of the new Cortex
 ```php
 null add( Cortex $model )
 ```
+
+It's also possible to use the array notation to add models:
+
+```php
+$news->load();
+$new_comment = $news->rel('comments');
+$new_comment->text = 'Foo Bar';
+$news->comments[] = $new_comment;
+$news->save();
+```
+
 
 ### castAll
 **cast all contained mappers to a nested array**
@@ -1450,7 +1482,18 @@ CortexCollection factory( array $records )
 array getAll( string $prop [, bool $raw = false ])
 ```
 
-You can fetch all values of a certain key from all containing mappers using `getAll()`. Set the 2nd argument to `true` the get only the raw DB results instead of resolved mappers on fields that are configured as a relation.
+You can fetch all values of a certain key from all containing mappers using `getAll()`. Set the 2nd argument to `true` to get only the raw DB results instead of resolved mappers on fields that are configured as a relation.
+
+```php
+$users = $user->find(array('active = ?',1));
+$mails = $users->getAll('email'); 
+/* Array(
+    'user1@domain.com',
+    'user2@domain.com',
+    'user3@domain.com'
+)*/
+```
+
 
 ### getBy
 
@@ -1531,7 +1574,7 @@ This removes a part from the collection.
 
 ## Known Issues
 
-* Not really a bug, but collections returned by `find()` method are not cloneable because they need to keep unique references to the identity map of its relations. This leads to the point that all containing mappers are not automatically escaped in templates, regardless of the `ESCAPE` setting. Keep in mind to add the `| esc` filter to your tokens.
+* Not really a bug, but returned collections (from relations, *find*, or *paginate* method) are not cloneable because they need to keep a unique references to the identity map of its relations. This leads to the point that all containing mappers are not automatically escaped in templates, regardless of the `ESCAPE` setting. Keep in mind to add the `| esc` filter to your tokens.
 
 If you find any issues or bugs, please file a [new Issue](https://github.com/ikkez/F3-Sugar/issues) on github or write a mail. Thanks.
 
