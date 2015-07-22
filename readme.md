@@ -1555,7 +1555,7 @@ If you need to re-sort a result collection once more to another key, use this me
 array setModels( array $models [, bool $init = true ])
 ```
 
-This adds multiple Cortex objects to the own collection. When `$init` is false, added models with this method wont effect the **changed** state. 
+This adds multiple Cortex objects to the own collection. When `$init` is `true`, added models with this method wont effect the **changed** state. 
 
 ### slice
 **slice the collection**
