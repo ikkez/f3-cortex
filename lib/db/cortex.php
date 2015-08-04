@@ -306,30 +306,30 @@ class Cortex extends Cursor {
 					// check m:m relation
 					if (array_key_exists('has-many', $field)) {
 						// m:m relation conf [class,to-key,from-key]
-						if (!is_array($relConf = $field['has-many'])) {
-							unset($fields[$key]);
-							continue;
-						}
-						$rel = $relConf[0]::resolveConfiguration();
-						// check if foreign conf matches m:m
-						if (array_key_exists($relConf[1],$rel['fieldConf'])
-							&& !is_null($rel['fieldConf'][$relConf[1]])
-							&& $relConf['hasRel'] == 'has-many') {
-							// compute mm table name
-							$mmTable = isset($relConf[2]) ? $relConf[2] :
-								static::getMMTableName(
-									$rel['table'], $relConf[1], $table, $key,
-									$rel['fieldConf'][$relConf[1]]['has-many']);
-							if (!in_array($mmTable,$schema->getTables())) {
-								$mmt = $schema->createTable($mmTable);
-								$mmt->addColumn($relConf[1])->type($relConf['relFieldType']);
-								$mmt->addColumn($key)->type($field['type']);
-								$index = array($relConf[1],$key);
-								sort($index);
-								$mmt->addIndex($index);
-								$mmt->build();
+						if (is_array($relConf = $field['has-many'])) {
+							$rel = $relConf[0]::resolveConfiguration();
+							// check if foreign conf matches m:m
+							if (array_key_exists($relConf[1],$rel['fieldConf'])
+								&& !is_null($rel['fieldConf'][$relConf[1]])
+								&& $relConf['hasRel'] == 'has-many') {
+								// compute mm table name
+								$mmTable = isset($relConf[2]) ? $relConf[2] :
+									static::getMMTableName(
+										$rel['table'], $relConf[1], $table, $key,
+										$rel['fieldConf'][$relConf[1]]['has-many']);
+								if (!in_array($mmTable,$schema->getTables())) {
+									$mmt = $schema->createTable($mmTable);
+									$mmt->addColumn($relConf[1])->type($relConf['relFieldType']);
+									$mmt->addColumn($key)->type($field['type']);
+									$index = array($relConf[1],$key);
+									sort($index);
+									$mmt->addIndex($index);
+									$mmt->build();
+								}
 							}
 						}
+						unset($fields[$key]);
+						continue;
 					}
 					// skip virtual fields with no type
 					if (!array_key_exists('type', $field)) {
@@ -1308,6 +1308,7 @@ class Cortex extends Cursor {
 					$val = $this->emit('set_'.$key, $val);
 					$val = $this->getForeignKeysArray($val,'_id',$key);
 					$this->saveCsd[$key] = $val; // array of keys
+					$this->fieldsCache[$key] = $val;
 					return $val;
 				} elseif ($relConf['hasRel'] == 'belongs-to-one') {
 					// TODO: many-to-one, bidirectional, inverse way
@@ -1853,7 +1854,7 @@ class Cortex extends Cursor {
 
 	/**
 	 * cast a related collection of mappers
-	 * @param string|array $key  array of mapper objects, or field name
+	 * @param string $key field name
 	 * @param int $rel_depths  depths to resolve relations
 	 * @return array    array of associative arrays
 	 */
