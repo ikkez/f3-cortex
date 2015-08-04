@@ -18,7 +18,7 @@
  *  https://github.com/ikkez/F3-Sugar/
  *
  *  @package DB
- *  @version 1.4.0
+ *  @version 1.4.1-dev
  *  @since 24.04.2012
  *  @date 04.06.2015
  */
@@ -111,7 +111,8 @@ class Cortex extends Cursor {
 			$this->primary = '_id';
 		elseif (!$this->primary)
 			$this->primary = 'id';
-		if (!$this->table && !$this->fluid)
+		$this->table = $this->getTable();
+		if (!$this->table)
 			trigger_error(self::E_NO_TABLE);
 		$this->ttl = $ttl ?: 60;
 		if (!$this->rel_ttl)
@@ -119,7 +120,7 @@ class Cortex extends Cursor {
 		$this->_ttl = $this->rel_ttl ?: 0;
 		if (static::$init == TRUE) return;
 		if ($this->fluid)
-			static::setup($this->db,$this->getTable(),array());
+			static::setup($this->db,$this->table,array());
 		$this->initMapper();
 	}
 
@@ -264,7 +265,7 @@ class Cortex extends Cursor {
 	 */
 	public function getTable()
 	{
-		if (!$this->table && $this->fluid)
+		if (!$this->table && ($this->fluid || static::$init))
 			$this->table = strtolower(get_class($this));
 		return $this->table;
 	}
@@ -468,7 +469,7 @@ class Cortex extends Cursor {
 			// compute mm table name
 			$mmTable = isset($conf[2]) ? $conf[2] :
 				static::getMMTableName($conf['relTable'],
-					$conf['relField'], $this->getTable(), $key, $fConf);
+					$conf['relField'], $this->table, $key, $fConf);
 			$this->fieldConf[$key]['has-many']['refTable'] = $mmTable;
 		} else
 			$mmTable = $conf['refTable'];
@@ -711,7 +712,7 @@ class Cortex extends Cursor {
 						$filter[0] .= ' and ';
 					$cond = array_shift($addToFilter);
 					if ($this->dbsType=='sql')
-						$cond = $this->_sql_quoteCondition($cond,$this->db->quotekey($this->getTable()));
+						$cond = $this->_sql_quoteCondition($cond,$this->db->quotekey($this->table));
 					$filter[0] .= '('.$cond.')';
 					$filter = array_merge($filter, $addToFilter);
 				}
@@ -1169,7 +1170,7 @@ class Cortex extends Cursor {
 					if ($this->dbsType == 'sql') {
 						$mmTable = $this->mmTable($relConf,$key);
 						$filter = array($this->db->quotekey($mmTable).'.'.$this->db->quotekey($relConf['relField'])
-							.' = '.$this->db->quotekey($this->getTable()).'.'.$this->db->quotekey($this->primary));
+							.' = '.$this->db->quotekey($this->table).'.'.$this->db->quotekey($this->primary));
 						$from=$mmTable;
 						if (array_key_exists($key, $this->relFilter) &&
 							!empty($this->relFilter[$key][0])) {
@@ -1196,7 +1197,7 @@ class Cortex extends Cursor {
 						$fKey=$this->db->quotekey($fConf['primary']);
 						$rKey=$this->db->quotekey($relConf[1]);
 						$pKey=$this->db->quotekey($this->primary);
-						$table=$this->db->quotekey($this->getTable());
+						$table=$this->db->quotekey($this->table);
 						$crit = $fTable.'.'.$rKey.' = '.$table.'.'.$pKey;
 						$filter = $this->mergeWithRelFilter($key,array($crit));
 						$filter = $this->queryParser->prepareFilter($filter,$this->dbsType,$this->fieldConf);
