@@ -216,7 +216,7 @@ class User extends \DB\Cortex {
         ),
     ),
     $db = 'DB',
-    $table = 'users'
+    $table = 'users',
     $fluid = true,      // triggers the SQL Fluid Mode, default: false
     $primary = 'uid',   // name of the primary key (auto-created), default: id
     $ttl = 120,         // caching time of field schema, default: 60
@@ -467,7 +467,7 @@ $news->save();
 now you can get:
 
 ``` php
-$news->author->name; // 'Johnny English'
+echo $news->author->name; // 'Johnny English'
 ```
 
 The field `author` now holds the whole mapper object of the AuthorModel. So you can also update, delete or cast it.
@@ -518,7 +518,7 @@ And all news that are tagged with *Responsive*:
 
 ``` php
 $tags->load(array('title = ?','Responsive'));
-$tags->news[0]->title; // '10 Responsive Images Plugins'
+echo $tags->news[0]->title; // '10 Responsive Images Plugins'
 ```
 
 This example shows the inverse way of querying (using the TagModel to find the corresponding news). Of cause the can also use a more direct way that offers even more possibilities, therefore check the [has()](#has) method.
@@ -664,7 +664,7 @@ In other words: Let's find all news records that are tagged by "Responsive".
 ``` php
 $news->has('tags', array('title = ?','Responsive'));
 $results = $news->find();
-$results[0]->title; // '10 Responsive Images Plugins'
+echo $results[0]->title; // '10 Responsive Images Plugins'
 ```
 
 Of cause you can also use the inverse way of querying, using the TagModel, load them by title and access the shared `$tags->news` property to find your records.
@@ -749,7 +749,7 @@ $user->virtual('full_name', function($this) {
 });
 ```
 
-You can also use this to count or sum fields together and even reorder you collection on this fields using `$collection->orderBy('foo DESC, bar ASC')`. Keep in mind that these virtual fields only applies to your final received collection - you cannot use these fields in your filter query or sort condition before the actual find. But if you use a SQL engine, you can use the underlying mapper abilities of virtual adhoc fields - just set `$mapper->newField = 'SQL EXPRESSION';` before any load or find operation is made.
+You can also use this to count or sum fields together and even reorder your collection on this fields using `$collection->orderBy('foo DESC, bar ASC')`. Keep in mind that these virtual fields only applies to your final received collection - you cannot use these fields in your filter query or sort condition before the actual find. But if you use a SQL engine, you can use the underlying mapper abilities of virtual adhoc fields - just set `$mapper->newField = 'SQL EXPRESSION';` before any load or find operation is made.
 
 
 ## Mapper API
