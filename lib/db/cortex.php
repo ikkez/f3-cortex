@@ -2133,7 +2133,10 @@ class CortexQueryParser extends \Prefab {
 					}
 					unset($part);
 				}
-				array_unshift($ncond, implode(' ', $parts));
+				array_unshift($ncond, array_reduce($parts,function($out,$part){
+					return $out.((!$out||in_array($part,array('(',')'))
+						||preg_match('/\($/',$out))?'':' ').$part;
+				},''));
 				break;
 			default:
 				trigger_error(self::E_ENGINEERROR);
