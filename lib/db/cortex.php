@@ -1048,12 +1048,14 @@ class Cortex extends Cursor {
 	/**
 	 * Delete object/s and reset ORM
 	 * @param $filter
-	 * @return void
+	 * @return bool
 	 */
 	public function erase($filter = null)
 	{
 		$filter = $this->queryParser->prepareFilter($filter, $this->dbsType);
-		if (!$filter && $this->emit('beforeerase')!==false) {
+		if (!$filter) {
+			if ($this->emit('beforeerase')===false)
+				return false;
 			if ($this->fieldConf) {
 				foreach($this->fieldConf as $field => $conf)
 					if (isset($conf['has-many']) &&
@@ -1065,6 +1067,7 @@ class Cortex extends Cursor {
 			$this->emit('aftererase');
 		} elseif($filter)
 			$this->mapper->erase($filter);
+		return true;
 	}
 
 	/**
