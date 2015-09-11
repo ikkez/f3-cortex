@@ -915,7 +915,7 @@ $user->cast(NULL, array(
                 // 0 doesn't cast any relation (default if this key is missing)
   'modelA' => 0 // if a relation key is defined here, modelA is being loaded and casted,
                 // but not its own relations, because the depth is 0 for it
-  'modelB' => 1 // modelB and all it's 1st level relations are loaded and casted
+  'modelB' => 1 // modelB and all its 1st level relations are loaded and casted
   'modelC' => array(...) // you can recursively extend this cast array scheme
 ));
 
