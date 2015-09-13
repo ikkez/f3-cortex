@@ -34,7 +34,7 @@ class Test_Syntax {
 		$cx->save();
 		$cx->reset();
 
-		$cx->title = 'foo4';
+		$cx->title = 'FOO4';
 		$cx->num1 = 3;
 		$cx->save();
 		$cx->reset();
@@ -83,7 +83,7 @@ class Test_Syntax {
 			),
 			3 => array(
 				'num1' => 3,
-				'title' => 'foo4',
+				'title' => 'FOO4',
 			),
 			4 => array(
 				'num1' => 3,

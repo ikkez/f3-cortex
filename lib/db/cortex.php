@@ -2355,14 +2355,14 @@ class CortexQueryParser extends \Prefab {
 		$lC = substr($var, -1, 1);
 		// %var% -> /var/
 		if ($var[0] == '%' && $lC == '%')
-			$var = '/'.substr($var, 1, -1).'/';
+			$var = substr($var, 1, -1);
 		// var%  -> /^var/
 		elseif ($lC == '%')
-			$var = '/^'.substr($var, 0, -1).'/';
+			$var = '^'.substr($var, 0, -1);
 		// %var  -> /var$/
 		elseif ($var[0] == '%')
-			$var = '/'.substr($var, 1).'$/';
-		return $var;
+			$var = substr($var, 1).'$';
+		return '/'.$var.'/iu';
 	}
 
 	/**
