@@ -2210,6 +2210,7 @@ class CortexQueryParser extends \Prefab {
 			if (is_int(strpos($part, '?'))) {
 				$val = array_shift($args);
 				preg_match('/(@\w+)/i', $part, $match);
+				$skipVal=false;
 				// find like operator
 				if (is_int(strpos($upart = strtoupper($part), ' @LIKE '))) {
 					if ($not = is_int($npos = strpos($upart, '@NOT')))
@@ -2217,16 +2218,18 @@ class CortexQueryParser extends \Prefab {
 					$val = $this->_likeValueToRegEx($val);
 					$part = ($not ? '!' : '').'preg_match(?,'.$match[0].')';
 				} // find IN operator
-				else if (is_int($pos = strpos($upart, ' @IN '))) {
+				elseif (is_int($pos = strpos($upart, ' @IN '))) {
 					if ($not = is_int($npos = strpos($upart, '@NOT')))
 						$pos = $npos;
 					$part = ($not ? '!' : '').'in_array('.substr($part, 0, $pos).
 						',array(\''.implode('\',\'', $val).'\'))';
-					unset($val);
+					$skipVal=true;
 				}
 				// add existence check
-				$part = '(isset('.$match[0].') && '.$part.')';
-				if (isset($val))
+				$part = ($val===null && !$skipVal)
+					? '(array_key_exists(\''.ltrim($match[0],'@').'\',$_row) && '.$part.')'
+					: '(isset('.$match[0].') && '.$part.')';
+				if (!$skipVal)
 					$ncond[] = $val;
 			} elseif ($count >= 1) {
 				// field comparison
