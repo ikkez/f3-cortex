@@ -1076,6 +1076,14 @@ class Cortex extends Cursor {
 	 **/
 	function save()
 	{
+		// update changed collections
+		$fields = $this->fieldConf;
+		if ($fields)
+			foreach($fields as $key=>$conf)
+				if (!empty($this->fieldsCache[$key]) && $this->fieldsCache[$key] instanceof CortexCollection
+					&& $this->fieldsCache[$key]->hasChanged())
+					$this->set($key,$this->fieldsCache[$key]->getAll('_id',true));
+		// perform event & save operations
 		if ($new = $this->dry()) {
 			if ($this->emit('beforeinsert')===false)
 				return false;
@@ -1085,14 +1093,6 @@ class Cortex extends Cursor {
 				return false;
 			$result=$this->update();
 		}
-		// update changed collections
-		$fields = $this->fieldConf;
-		if ($fields)
-			foreach($fields as $key=>$conf)
-				if (!empty($this->fieldsCache[$key]) && $this->fieldsCache[$key] instanceof CortexCollection
-					&& $this->fieldsCache[$key]->hasChanged())
-					$this->set($key,$this->fieldsCache[$key]->getAll('_id',true));
-
 		// m:m save cascade
 		if (!empty($this->saveCsd)) {
 			foreach($this->saveCsd as $key => $val) {
