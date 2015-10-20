@@ -2524,11 +2524,12 @@ class CortexCollection extends \ArrayIterator {
 	{
 		$out = array();
 		foreach ($this->getArrayCopy() as $model) {
-			if ($model->exists($prop,true)) {
+			if ($model instanceof Cortex && $model->exists($prop,true)) {
 				$val = $model->get($prop, $raw);
 				if (!empty($val))
 					$out[] = $val;
-			}
+			} elseif($raw)
+				$out[] = $model;
 		}
 		return $out;
 	}
