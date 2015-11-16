@@ -1542,10 +1542,10 @@ bool hasChanged()
 **re-assort the current collection using a sql-like syntax**
 
 ```php
-null orderBy( array $cond )
+null orderBy( string $cond )
 ```
 
-If you need to re-sort a result collection once more to another key, use this method like `$results->orderBy('name DESC');`.
+If you need to re-sort a result collection once more to another key, use this method like `$results->orderBy('name DESC');`. This also works with multiple sort keys.
 
 
 ### setModels
