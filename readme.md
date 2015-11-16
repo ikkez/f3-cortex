@@ -1542,7 +1542,7 @@ bool hasChanged()
 **re-assort the current collection using a sql-like syntax**
 
 ```php
-array getBy( string $index [, bool $nested = false ])
+null orderBy( array $cond )
 ```
 
 If you need to re-sort a result collection once more to another key, use this method like `$results->orderBy('name DESC');`.
