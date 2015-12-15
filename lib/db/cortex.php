@@ -1025,12 +1025,27 @@ class Cortex extends Cursor {
 	{
 		if (array_key_exists($key, $this->relFilter) &&
 			!empty($this->relFilter[$key][0]))
-		{
-			$filter = $this->relFilter[$key][0];
-			$crit[0] .= ' and '.array_shift($filter);
-			$crit = array_merge($crit, $filter);
-		}
+			$crit=$this->mergeFilter(array($this->relFilter[$key][0],$crit));
 		return $crit;
+	}
+
+	/**
+	 * merge multiple filters
+	 * @param $filters
+	 * @param string $glue
+	 * @return array
+	 */
+	public function mergeFilter($filters,$glue='and') {
+		$crit = array();
+		$params = array();
+		if ($filters) {
+			foreach($filters as $filter) {
+				$crit[] = array_shift($filter);
+				$params = array_merge($params,$filter);
+			}
+			array_unshift($params,'( '.implode(' ) '.$glue.' ( ',$crit).' )');
+		}
+		return $params;
 	}
 
 	/**
