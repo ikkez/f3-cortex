@@ -9,6 +9,7 @@ class TagModel extends \DB\Cortex {
 			),
 			'news' => array(
 				'has-many' => array('\NewsModel','tags2','news_tags'),
+//				'has-many' => array('\NewsModel','tags2'),
 			),
 		),
 //		$primary = 'tid',

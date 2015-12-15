@@ -178,6 +178,14 @@ class Test_Common {
 			&& is_array($r['author']['profile']['author']),
 			'custom multi-level nested cast');
 
+		$filterA = array('foo1 = ? and bar1 = ?',10,20);
+		$filterB = array('foo2 = ? and bar2 = ?',30,40);
+		$filterC = array('foo3 = ? and bar3 = ?',50,60);
+		$filter = $news->mergeFilter(array($filterA, $filterB, $filterC),'or');
+		$test->expect($filter == array('( foo1 = ? and bar1 = ? ) or ( foo2 = ? and bar2 = ? ) or ( foo3 = ? and bar3 = ? )',
+				10,20,30,40,50,60),
+			'merge multiple filters');
+
 		///////////////////////////////////
 		return $test->results();
 	}

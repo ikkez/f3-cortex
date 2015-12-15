@@ -7,7 +7,6 @@ class Cortex extends Controller
 	function get()
 	{
 		$f3 = \Base::instance();
-		$f3->set('AUTOLOAD', $f3->get('AUTOLOAD').';app/cortex/');
 		$f3->set('QUIET', false);
 
 		$dbs = array(
