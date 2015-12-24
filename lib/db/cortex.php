@@ -1515,7 +1515,8 @@ class Cortex extends Cursor {
 					trigger_error(sprintf(self::E_REL_CONF_INC, $key));
 				$rel = $this->getRelInstance($fromConf[0],null,$key,true);
 				$relFieldConf = $rel->getFieldConfiguration();
-				$relType = key($relFieldConf[$fromConf[1]]);
+				$relType = isset($relFieldConf[$fromConf[1]]['belongs-to-one']) ?
+					'belongs-to-one' : 'has-many';
 				// one-to-*, bidirectional, inverse way
 				if ($relType == 'belongs-to-one') {
 					$toConf = $relFieldConf[$fromConf[1]]['belongs-to-one'];
@@ -1830,7 +1831,7 @@ class Cortex extends Cursor {
 					$rd = isset($rel_depths[$key]) ? $rel_depths[$key] : $rel_depths['*'];
 					if ((is_array($rd) || $rd >= 0) && $type=preg_grep('/[belongs|has]-(to-)*[one|many]/',
 							array_keys($this->fieldConf[$key]))) {
-						$relType=$type[0];
+						$relType=current($type);
 						// cast relations
 						$val = (($relType == 'belongs-to-one' || $relType == 'belongs-to-many')
 							&& !$mp->exists($key)) ? NULL : $mp->get($key);
