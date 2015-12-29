@@ -215,6 +215,7 @@ class Test_Filter {
 			$type.': set restricted fields to related mappers'
 		);
 
+		$news->fields(array('tags2'));
 		$news->filter('tags2',null,array('order'=>'title ASC'));
 		$news->load(array('title = ?','Responsive Images'));
 		$test->expect(
@@ -222,6 +223,9 @@ class Test_Filter {
 			$news->tags2[1]->title == 'Web Design',
 			$type.': filter with sorting of related records'
 		);
+
+		unset($news);
+		$news = new \NewsModel();
 
 		// get all tags sorted by their usage in news articles
 		$tag->reset();

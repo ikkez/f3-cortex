@@ -173,7 +173,9 @@ class Cortex extends Cursor {
 					list($key, $relField) = explode('.',$val,2);
 					$this->relWhitelist[$key][(int)$exclude][] = $relField;
 					unset($fields[$i]);
+					$fields[] = $key;
 				}
+		$fields = array_unique($fields);
 		$schema = $this->whitelist ?: $this->mapper->fields();
 		if (!$schema && !$this->dbsType != 'sql' && $this->dry()) {
 			$schema = $this->load()->mapper->fields();
