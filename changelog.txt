@@ -1,5 +1,18 @@
 CHANGELOG - Cortex ORM
 
+1.4.1 (29.01.2016)
+*	new: mergeFilter method, #7
+*	fix column rel type recognition, #13
+*	fix id assignments on collections, #8
+*	fix relation updates on changed collections, #8
+*	fix NULL filter arguments for Jig, #6
+*	keep case-insensitivity for Jig & Mongo, #5
+*	add return to erase method, #3
+*	Bug fix: missing relation fields when whitelist is active
+*	Bug fix: sql expressions in queries
+*	Bug fix: drop obsolete has-many fields on setup
+*	Bug fix: table detection
+
 1.4.0 (04.06.2015)
 *	experimental: nested has() propagation
 *	new: nested filter() propagation (dot-style chaining)
