@@ -18,7 +18,7 @@
  *  https://github.com/ikkez/F3-Sugar/
  *
  *  @package DB
- *  @version 1.4.1
+ *  @version 1.4.2-dev
  *  @date 29.01.2016
  *  @since 24.04.2012
  */
@@ -2149,6 +2149,8 @@ class CortexQueryParser extends \Prefab {
 							$bindMarks = str_repeat('?,', count($val) - 1).'?';
 							$part = substr($part, 0, $pos).'IN ('.$bindMarks.')';
 							$ncond = array_merge($ncond, $val);
+						} elseif($val === null && preg_match('/(\w+)\s*([!=<>]+)\s*\?/i',$part,$match)) {
+							$part = $match[1].' IS '.($match[2]=='='||$match[2]=='=='?'':'NOT ').'NULL';
 						} else
 							$ncond[] = $val;
 					}
@@ -2242,6 +2244,12 @@ class CortexQueryParser extends \Prefab {
 					$part = ($not ? '!' : '').'in_array('.substr($part, 0, $pos).
 						',array(\''.implode('\',\'', $val).'\'))';
 					$skipVal=true;
+				}
+				elseif($val===null && preg_match('/(\w+)\s*([!=<>]+)\s*\?/i',$part,$nmatch)
+					&& ($nmatch[2]=='=' || $nmatch[2]=='==')){
+					$part = '(!array_key_exists(\''.ltrim($nmatch[1],'@').'\',$_row))';
+					unset($part);
+					continue;
 				}
 				// add existence check
 				$part = ($val===null && !$skipVal)
