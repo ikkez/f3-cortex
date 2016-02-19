@@ -1281,6 +1281,24 @@ Cortex has( string $key [, array $filter = null [, array $options = null ]])
 See [Advanced Filter Techniques](#advanced-filter-techniques).
 
 
+### mergeFilter
+**Glue multiple filter arrays together into one**
+
+```php
+array mergeFilter( array $filters [, string $glue = 'and' ])
+```
+
+This is useful when you want to add more conditions to your filter array or want to merge multiple filter arrays together, i.e. when you assemble the filter for a complex search functionality which is based on conditions.
+Use the `$glue` parameter to define the part that is used to merge two filters together (usually `AND` or `OR`).
+
+```php
+$filter1 = array('_id = ?', 999);
+$filter2 = array('published = ? or active = ?', true, false);
+
+$new_filter = $mapper->mergeFilter(array($filter1, $filter2));
+// array('(_id = ?) and (published = ? or active = ?)', 999, true, false)
+```
+
 ### paginate
 **Return array containing subset of records matching criteria**
 

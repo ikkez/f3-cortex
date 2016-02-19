@@ -1033,7 +1033,7 @@ class Cortex extends Cursor {
 
 	/**
 	 * merge multiple filters
-	 * @param $filters
+	 * @param array $filters
 	 * @param string $glue
 	 * @return array
 	 */
