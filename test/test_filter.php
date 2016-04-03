@@ -46,14 +46,15 @@ class Test_Filter {
 			$result[0]['name'] == 'Johnny English',
 			$type.': has filter on many-to-one field'
 		);
+		\Matrix::instance()->sort($result[0]['news'],'title');
 		$test->expect(
 			count($result[0]['news']) == 2 &&
-			$result[0]['news'][0]['title'] == 'Responsive Images' &&
-			$result[0]['news'][1]['title'] == 'CSS3 Showcase',
+			$result[0]['news'][0]['title'] == 'CSS3 Showcase' &&
+			$result[0]['news'][1]['title'] == 'Responsive Images',
 			$type.': has filter does not prune relation set'
 		);
 
-		$result = $news->has('author', array('name = ?', 'Johnny English'))->afind();
+		$result = $news->has('author', array('name = ?', 'Johnny English'))->afind(null,array('order'=>'title DESC'));
 		$test->expect(
 			count($result) == 2 && // has 2 news
 			$result[0]['title'] == 'Responsive Images' &&
@@ -160,7 +161,7 @@ class Test_Filter {
 
 		$news->reset();
 		$news->has('author', array('name = ?', 'Ridley Scott'));
-		$news->load();
+		$news->load(null,array('order'=>'title'));
 		$res = array();
 		while (!$news->dry()) {
 			$res[] = $news->title;
