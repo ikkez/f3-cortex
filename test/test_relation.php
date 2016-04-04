@@ -127,10 +127,12 @@ class Test_Relation {
 		$news_id[] = $news->_id;
 		$news->reset();
 
-		$allnews = $this->getResult($news->find());
+		$allnews = $this->getResult($news->find(null,array('order'=>'title')));
 		$test->expect(
-			json_encode($allnews) ==
-			'[{"title":"Responsive Images","text":"Lorem Ipsun"},{"title":"CSS3 Showcase","text":"News Text 2"},{"title":"Touchable Interfaces","text":"Lorem Foo"}]',
+			count($allnews) == 3 &&
+			$allnews[0]['title'] == 'CSS3 Showcase' &&
+			$allnews[1]['title'] == 'Responsive Images' &&
+			$allnews[2]['title'] == 'Touchable Interfaces',
 			$type.': all NewsModel items created'
 		);
 
@@ -189,6 +191,7 @@ class Test_Relation {
 		$news->reset();
 		$news->load(array($news_pk.' = ?', $news_id[1]));
 		$test->expect(
+			count($news->tags) == 2 &&
 			$news->tags[0]->title == 'Responsive' && $news->tags[1]->title == 'Usability',
 			$type.': belongs-to-many: relations created with array of IDs'
 		);
