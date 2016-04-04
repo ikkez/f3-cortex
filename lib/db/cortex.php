@@ -976,14 +976,14 @@ class Cortex extends Cursor {
 	}
 
 	/**
-	 * add table prefix to identifiers
+	 * add table prefix to identifiers which do not have a table prefix yet
 	 * @param string $cond
 	 * @param string $table
 	 * @return string
 	 */
 	protected function _sql_prependTableToFields($cond, $table) {
 		 return preg_replace_callback('/(\w+\((?:[^)(]+|(?R))*\))|'.
-			 '(?:(\s)|^|(?<=[_(]))([a-zA-Z_](?:[\w\-_]+))(?=[\s<>=!)]|$)/i',
+			'(?:(\s)|^|(?<=[(]))([a-zA-Z_](?:[\w\-_]+))(?=[\s<>=!)]|$)/i',
 			function($match) use($table) {
 				if (!isset($match[3]))
 					return $match[1];
