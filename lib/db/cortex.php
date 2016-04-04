@@ -747,7 +747,7 @@ class Cortex extends Cursor {
 				if (!$count) {
 					$db=$this->db;
 					if (isset($options['group']))
-						$sql.=' GROUP BY '.preg_replace_callback('/\w+[._-\w]*/i', function($match) use($db) {
+						$sql.=' GROUP BY '.preg_replace_callback('/\w+[._\-\w]*/i', function($match) use($db) {
 								return $db->quotekey($match[0]);
 							}, $options['group']);
 					if (isset($options['order']))
