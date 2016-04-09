@@ -1180,7 +1180,7 @@ class Cortex extends Cursor {
 			// one-to-one, one-to-many
 			if ($this->fieldConf[$key]['relType'] == 'belongs-to-one') {
 				if ($this->dbsType == 'sql') {
-					$this->set('count_'.$key,'count('.$key.')');
+					$this->mapper->set('count_'.$key,'count('.$key.')');
 					$this->grp_stack=(!$this->grp_stack)?$key:$this->grp_stack.','.$key;
 				} elseif ($this->dbsType == 'mongo')
 					$this->_mongo_addGroup(array(
@@ -1210,7 +1210,7 @@ class Cortex extends Cursor {
 						$crit = array_shift($filter);
 						if (count($filter)>0)
 							$this->preBinds+=$filter;
-						$this->set('count_'.$key,'(select count('.$mmTable.'.'.$relConf['relField'].') from '.$from.
+						$this->mapper->set('count_'.$key,'(select count('.$mmTable.'.'.$relConf['relField'].') from '.$from.
 							' where '.$crit.' group by '.$mmTable.'.'.$relConf['relField'].')');
 					} else {
 						// count rel
@@ -1228,7 +1228,7 @@ class Cortex extends Cursor {
 						$crit = array_shift($filter);
 						if (count($filter)>0)
 							$this->preBinds+=$filter;
-						$this->set('count_'.$key,'(select count('.$fTable.'.'.$fConf['primary'].') from '.$fTable.' where '.
+						$this->mapper->set('count_'.$key,'(select count('.$fTable.'.'.$fConf['primary'].') from '.$fTable.' where '.
 									$crit.' group by '.$fTable.'.'.$rKey.')');
 					} else {
 						// count rel
