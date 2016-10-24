@@ -93,8 +93,7 @@ class Cortex extends Cursor {
 	 * @param null|bool   $fluid
 	 * @param int         $ttl
 	 */
-	public function __construct($db = NULL, $table = NULL, $fluid = NULL, $ttl = 0)
-	{
+	public function __construct($db = NULL, $table = NULL, $fluid = NULL, $ttl = 0) {
 		if (!is_null($fluid))
 			$this->fluid = $fluid;
 		if (!is_object($this->db=(is_string($db=($db?:$this->db))?\Base::instance()->get($db):$db)))
@@ -127,8 +126,7 @@ class Cortex extends Cursor {
 	/**
 	 * create mapper instance
 	 */
-	public function initMapper()
-	{
+	public function initMapper() {
 		switch ($this->dbsType) {
 			case 'jig':
 				$this->mapper = new Jig\Mapper($this->db, $this->table);
@@ -164,8 +162,7 @@ class Cortex extends Cursor {
 	 * @param bool  $exclude
 	 * @return array
 	 */
-	public function fields(array $fields=array(), $exclude=false)
-	{
+	public function fields(array $fields=array(), $exclude=false) {
 		if ($fields)
 			// collect restricted fields for related mappers
 			foreach($fields as $i=>$val)
@@ -208,8 +205,7 @@ class Cortex extends Cursor {
 	 *  )
 	 * @param array $config
 	 */
-	function setFieldConfiguration(array $config)
-	{
+	function setFieldConfiguration(array $config) {
 		$this->fieldConf = $config;
 		$this->reset();
 	}
@@ -218,8 +214,7 @@ class Cortex extends Cursor {
 	 * returns model field conf array
 	 * @return array|null
 	 */
-	public function getFieldConfiguration()
-	{
+	public function getFieldConfiguration() {
 		return $this->fieldConf;
 	}
 
@@ -227,8 +222,7 @@ class Cortex extends Cursor {
 	 * kick start to just fetch the config
 	 * @return array
 	 */
-	static public function resolveConfiguration()
-	{
+	static public function resolveConfiguration() {
 		static::$init=true;
 		$self = new static();
 		static::$init=false;
@@ -255,8 +249,7 @@ class Cortex extends Cursor {
 	 * returns the collection where this model lives in
 	 * @return CortexCollection
 	 */
-	protected function getCollection()
-	{
+	protected function getCollection() {
 		return ($this->collection && $this->smartLoading)
 			? $this->collection : false;
 	}
@@ -265,8 +258,7 @@ class Cortex extends Cursor {
 	 * returns model table name
 	 * @return string
 	 */
-	public function getTable()
-	{
+	public function getTable() {
 		if (!$this->table && ($this->fluid || static::$init))
 			$this->table = strtolower(get_class($this));
 		return $this->table;
@@ -280,8 +272,7 @@ class Cortex extends Cursor {
 	 * @param $fields
 	 * @return bool
 	 */
-	static public function setup($db=null, $table=null, $fields=null)
-	{
+	static public function setup($db=null, $table=null, $fields=null) {
 		/** @var Cortex $self */
 		$self = get_called_class();
 		if (is_null($db) || is_null($table) || is_null($fields))
@@ -378,8 +369,7 @@ class Cortex extends Cursor {
 	 * @param null $db
 	 * @param null $table
 	 */
-	static public function setdown($db=null, $table=null)
-	{
+	static public function setdown($db=null, $table=null) {
 		$self = get_called_class();
 		if (is_null($db) || is_null($table))
 			$df = $self::resolveConfiguration();
@@ -440,8 +430,7 @@ class Cortex extends Cursor {
 	 * @param null|array $fConf  foreign conf [class,key]
 	 * @return string
 	 */
-	static protected function getMMTableName($ftable, $fkey, $ptable, $pkey, $fConf=null)
-	{
+	static protected function getMMTableName($ftable, $fkey, $ptable, $pkey, $fConf=null) {
 		if ($fConf) {
 			list($fclass, $pfkey) = $fConf;
 			$self = get_called_class();
@@ -465,8 +454,7 @@ class Cortex extends Cursor {
 	 * @param null|array $fConf optional foreign config
 	 * @return string
 	 */
-	protected function mmTable($conf, $key, $fConf=null)
-	{
+	protected function mmTable($conf, $key, $fConf=null) {
 		if (!isset($conf['refTable'])) {
 			// compute mm table name
 			$mmTable = isset($conf[2]) ? $conf[2] :
@@ -483,8 +471,7 @@ class Cortex extends Cursor {
 	 * @param $field
 	 * @return mixed
 	 */
-	protected static function resolveRelationConf($field)
-	{
+	protected static function resolveRelationConf($field) {
 		if (array_key_exists('belongs-to-one', $field)) {
 			// find primary field definition
 			if (!is_array($relConf = $field['belongs-to-one']))
@@ -540,8 +527,7 @@ class Cortex extends Cursor {
 	 * @param int $rel_depths
 	 * @return array
 	 */
-	public function afind($filter = NULL, array $options = NULL, $ttl = 0, $rel_depths = 1)
-	{
+	public function afind($filter = NULL, array $options = NULL, $ttl = 0, $rel_depths = 1) {
 		$result = $this->find($filter, $options, $ttl);
 		return $result ? $result->castAll($rel_depths): NULL;
 	}
@@ -553,8 +539,7 @@ class Cortex extends Cursor {
 	 * @param int        $ttl
 	 * @return CortexCollection
 	 */
-	public function find($filter = NULL, array $options = NULL, $ttl = 0)
-	{
+	public function find($filter = NULL, array $options = NULL, $ttl = 0) {
 		$sort=false;
 		if ($this->dbsType!='sql') {
 			if (!empty($this->countFields))
@@ -610,8 +595,7 @@ class Cortex extends Cursor {
 	 * @param bool $count
 	 * @return array|false array of underlying cursor objects
 	 */
-	protected function filteredFind($filter = NULL, array $options = NULL, $ttl = 0, $count=false)
-	{
+	protected function filteredFind($filter = NULL, array $options = NULL, $ttl = 0, $count=false) {
 		if ($this->grp_stack) {
 			if ($this->dbsType == 'mongo') {
 				$group = array(
@@ -813,8 +797,7 @@ class Cortex extends Cursor {
 	 * @param int   $ttl
 	 * @return Cortex
 	 */
-	public function load($filter = NULL, array $options = NULL, $ttl = 0)
-	{
+	public function load($filter = NULL, array $options = NULL, $ttl = 0) {
 		$this->reset();
 		$this->_ttl=$ttl?:$this->rel_ttl;
 		$res = $this->filteredFind($filter, $options, $ttl);
@@ -860,8 +843,7 @@ class Cortex extends Cursor {
 	 * @param int    $ttl
 	 * @return array|false
 	 */
-	protected function _hasRefsIn($key, $filter, $options, $ttl = 0)
-	{
+	protected function _hasRefsIn($key, $filter, $options, $ttl = 0) {
 		$type = $this->fieldConf[$key]['relType'];
 		$fieldConf = $this->fieldConf[$key][$type];
 		// one-to-many shortcut
@@ -881,8 +863,7 @@ class Cortex extends Cursor {
 	 * @param int $ttl
 	 * @return array|false
 	 */
-	protected function _hasRefsInMM($key, $filter, $options, $ttl=0)
-	{
+	protected function _hasRefsInMM($key, $filter, $options, $ttl=0) {
 		$fieldConf = $this->fieldConf[$key]['has-many'];
 		$rel = $this->getRelInstance($fieldConf[0],null,$key,true);
 		$hasSet = $rel->find($filter,$options,$ttl);
@@ -901,8 +882,7 @@ class Cortex extends Cursor {
 	/**
 	 * build query for SQL pivot table join and merge conditions
 	 */
-	protected function _hasJoinMM_sql($key, $hasCond, &$filter, &$options)
-	{
+	protected function _hasJoinMM_sql($key, $hasCond, &$filter, &$options) {
 		$fieldConf = $this->fieldConf[$key]['has-many'];
 		$hasJoin = array();
 		$mmTable = $this->mmTable($fieldConf,$key);
@@ -915,8 +895,7 @@ class Cortex extends Cursor {
 	/**
 	 * build query for single SQL table join and merge conditions
 	 */
-	protected function _hasJoin_sql($key, $table, $cond, &$filter, &$options)
-	{
+	protected function _hasJoin_sql($key, $table, $cond, &$filter, &$options) {
 		$relConf = $this->fieldConf[$key]['belongs-to-one'];
 		$relModel = is_array($relConf)?$relConf[0]:$relConf;
 		$rel = $this->getRelInstance($relModel,null,$key);
@@ -930,8 +909,7 @@ class Cortex extends Cursor {
 	/**
 	 * assemble SQL join query string
 	 */
-	protected function _sql_left_join($skey,$sTable,$fkey,$fTable)
-	{
+	protected function _sql_left_join($skey, $sTable, $fkey, $fTable) {
 		$skey = $this->db->quotekey($skey);
 		$sTable = $this->db->quotekey($sTable);
 		$fkey = $this->db->quotekey($fkey);
@@ -946,8 +924,7 @@ class Cortex extends Cursor {
 	 * @param array $filter		current filter to merge with
 	 * @param array $options	current options to merge with
 	 */
-	protected function _sql_mergeRelCondition($cond, $table, &$filter, &$options)
-	{
+	protected function _sql_mergeRelCondition($cond, $table, &$filter, &$options) {
 		if (!empty($cond[0])) {
 			$whereClause = '('.array_shift($cond[0]).')';
 			$whereClause = $this->_sql_prependTableToFields($whereClause,$table);
@@ -988,8 +965,7 @@ class Cortex extends Cursor {
 	 * @param array $option
 	 * @return $this
 	 */
-	public function filter($key,$filter=null,$option=null)
-	{
+	public function filter($key, $filter=null, $option=null) {
 		if (is_int(strpos($key,'.'))) {
 			list($key,$fkey) = explode('.',$key,2);
 			if (!isset($this->relFilter[$key.'.']))
@@ -1004,8 +980,7 @@ class Cortex extends Cursor {
 	 * removes one or all relation filter
 	 * @param null|string $key
 	 */
-	public function clearFilter($key = null)
-	{
+	public function clearFilter($key = null) {
 		if (!$key)
 			$this->relFilter = array();
 		elseif(isset($this->relFilter[$key]))
@@ -1018,8 +993,7 @@ class Cortex extends Cursor {
 	 * @param array $crit
 	 * @return array
 	 */
-	protected function mergeWithRelFilter($key,$crit)
-	{
+	protected function mergeWithRelFilter($key, $crit) {
 		if (array_key_exists($key, $this->relFilter) &&
 			!empty($this->relFilter[$key][0]))
 			$crit=$this->mergeFilter(array($this->relFilter[$key][0],$crit));
@@ -1032,7 +1006,7 @@ class Cortex extends Cursor {
 	 * @param string $glue
 	 * @return array
 	 */
-	public function mergeFilter($filters,$glue='and') {
+	public function mergeFilter($filters, $glue='and') {
 		$crit = array();
 		$params = array();
 		if ($filters) {
@@ -1050,8 +1024,7 @@ class Cortex extends Cursor {
 	 * @param string $key
 	 * @return array null
 	 */
-	protected function getRelFilterOption($key)
-	{
+	protected function getRelFilterOption($key) {
 		return (array_key_exists($key, $this->relFilter) &&
 			!empty($this->relFilter[$key][1]))
 			? $this->relFilter[$key][1] : null;
@@ -1062,8 +1035,7 @@ class Cortex extends Cursor {
 	 * @param $filter
 	 * @return bool
 	 */
-	public function erase($filter = null)
-	{
+	public function erase($filter = null) {
 		$filter = $this->queryParser->prepareFilter($filter, $this->dbsType, $this->db);
 		if (!$filter) {
 			if ($this->emit('beforeerase')===false)
@@ -1086,8 +1058,7 @@ class Cortex extends Cursor {
 	 * Save mapped record
 	 * @return mixed
 	 **/
-	function save()
-	{
+	function save() {
 		// update changed collections
 		$fields = $this->fieldConf;
 		if ($fields)
@@ -1143,8 +1114,7 @@ class Cortex extends Cursor {
 	 * @param int $ttl
 	 * @return mixed
 	 */
-	public function count($filter = NULL, $ttl = 60)
-	{
+	public function count($filter = NULL, $ttl = 60) {
 		$has=$this->hasCond;
 		$count=$this->filteredFind($filter,null,$ttl,true);
 		$this->hasCond=$has;
@@ -1231,7 +1201,7 @@ class Cortex extends Cursor {
 	 * merge mongo group options array
 	 * @param $opt
 	 */
-	protected function _mongo_addGroup($opt){
+	protected function _mongo_addGroup($opt) {
 		if (!$this->grp_stack)
 			$this->grp_stack = array('keys'=>array(),'initial'=>array(),'reduce'=>'','finalize'=>'');
 		if (isset($opt['keys']))
@@ -1267,8 +1237,7 @@ class Cortex extends Cursor {
 	 * @param $key string
 	 * @param $val mixed
 	 */
-	function set($key, $val)
-	{
+	function set($key, $val) {
 		$fields = $this->fieldConf;
 		unset($this->fieldsCache[$key]);
 		// pre-process if field config available
@@ -1394,8 +1363,7 @@ class Cortex extends Cursor {
 	 * @param $val
 	 * @return mixed
 	 */
-	protected function emit($event, $val=null)
-	{
+	protected function emit($event, $val=null) {
 		if (isset($this->trigger[$event])) {
 			if (preg_match('/^[sg]et_/',$event)) {
 				$val = (is_string($f=$this->trigger[$event])
@@ -1416,7 +1384,7 @@ class Cortex extends Cursor {
 	 * @param $key
 	 * @param $func
 	 */
-	public function onset($key,$func) {
+	public function onset($key, $func) {
 		$this->trigger['set_'.$key] = $func;
 	}
 
@@ -1425,7 +1393,7 @@ class Cortex extends Cursor {
 	 * @param $key
 	 * @param $func
 	 */
-	public function onget($key,$func) {
+	public function onget($key, $func) {
 		$this->trigger['get_'.$key] = $func;
 	}
 
@@ -1435,7 +1403,7 @@ class Cortex extends Cursor {
 	 * @param mixed|callback $val
 	 * @return mixed|null
 	 */
-	public function virtual($key,$val) {
+	public function virtual($key, $val) {
 		$this->vFields[$key]=$val;
 	}
 
@@ -1445,8 +1413,7 @@ class Cortex extends Cursor {
 	 * @param string $key
 	 * @param bool $raw
 	 */
-	function &get($key,$raw = false)
-	{
+	function &get($key, $raw = false) {
 		// handle virtual fields
 		if (isset($this->vFields[$key])) {
 			$out = (is_callable($this->vFields[$key]))
@@ -1683,8 +1650,7 @@ class Cortex extends Cursor {
 	 * @param $key string
 	 * @return array|Cortex|null|object
 	 */
-	protected function getForeignKeysArray($val, $rel_field, $key)
-	{
+	protected function getForeignKeysArray($val, $rel_field, $key) {
 		if (is_null($val))
 			return NULL;
 		if (is_object($val) && $val instanceof CortexCollection)
@@ -1732,8 +1698,7 @@ class Cortex extends Cursor {
 	 * @param bool $pushFilter
 	 * @return Cortex
 	 */
-	protected function getRelInstance($model=null,$relConf=null,$key='',$pushFilter=false)
-	{
+	protected function getRelInstance($model=null, $relConf=null, $key='', $pushFilter=false) {
 		if (!$model && !$relConf)
 			trigger_error(self::E_MISSING_REL_CONF);
 		$relConf = $model ? $model::resolveConfiguration() : $relConf;
@@ -1788,8 +1753,7 @@ class Cortex extends Cursor {
 	 * @param string $key
 	 * @return Cortex
 	 */
-	public function rel($key)
-	{
+	public function rel($key) {
 		$rt = $this->fieldConf[$key]['relType'];
 		$rc = $this->fieldConf[$key][$rt];
 		if (!is_array($rc))
@@ -1803,8 +1767,7 @@ class Cortex extends Cursor {
 	 * @param bool|Cortex $obj
 	 * @param int|array $rel_depths depths to resolve relations
 	 */
-	public function cast($obj = NULL, $rel_depths = 1)
-	{
+	public function cast($obj = NULL, $rel_depths = 1) {
 		$fields = $this->mapper->cast( ($obj) ? $obj->mapper : null );
 		if (!empty($this->vFields))
 			foreach(array_keys($this->vFields) as $key)
@@ -1871,8 +1834,7 @@ class Cortex extends Cursor {
 	 * @param int $rel_depths  depths to resolve relations
 	 * @return array    array of associative arrays
 	 */
-	function castField($key, $rel_depths=0)
-	{
+	function castField($key, $rel_depths=0) {
 		if (!$key)
 			return NULL;
 		$mapper_arr = $this->get($key);
@@ -1889,8 +1851,7 @@ class Cortex extends Cursor {
 	 * @param Cursor|array $mapper
 	 * @return Cortex
 	 */
-	protected function factory($mapper)
-	{
+	protected function factory($mapper) {
 		if (is_array($mapper)) {
 			$mp = clone($this->mapper);
 			$mp->reset();
@@ -1915,8 +1876,7 @@ class Cortex extends Cursor {
 	 * @param callback|array|string $fields
 	 * @return NULL
 	 */
-	public function copyfrom($key, $fields = null)
-	{
+	public function copyfrom($key, $fields = null) {
 		$f3 = \Base::instance();
 		$srcfields = is_array($key) ? $key : $f3->get($key);
 		if ($fields)
@@ -1948,8 +1908,7 @@ class Cortex extends Cursor {
 		\Base::instance()->set($key, $this->cast(null,$relDepth));
 	}
 
-	public function skip($ofs = 1)
-	{
+	public function skip($ofs = 1) {
 		$this->reset(false);
 		if ($this->mapper->skip($ofs))
 			return $this;
@@ -1957,15 +1916,13 @@ class Cortex extends Cursor {
 			$this->reset(false);
 	}
 
-	public function first()
-	{
+	public function first() {
 		$this->reset(false);
 		$this->mapper->first();
 		return $this;
 	}
 
-	public function last()
-	{
+	public function last() {
 		$this->reset(false);
 		$this->mapper->last();
 		return $this;
@@ -1976,8 +1933,7 @@ class Cortex extends Cursor {
 	 * @param bool $mapper
 	 * @return NULL|void
 	 */
-	public function reset($mapper = true)
-	{
+	public function reset($mapper = true) {
 		if ($mapper)
 			$this->mapper->reset();
 		$this->fieldsCache=array();
@@ -2081,8 +2037,7 @@ class CortexQueryParser extends \Prefab {
 	 * @param null $fieldConf
 	 * @return array|bool|null
 	 */
-	public function prepareFilter($cond, $engine, $db, $fieldConf=null)
-	{
+	public function prepareFilter($cond, $engine, $db, $fieldConf=null) {
 		if (is_null($cond)) return $cond;
 		if (is_string($cond))
 			$cond = array($cond);
@@ -2174,8 +2129,7 @@ class CortexQueryParser extends \Prefab {
 	 * @param $cond
 	 * @return array
 	 */
-	protected function splitLogical($cond)
-	{
+	protected function splitLogical($cond) {
 		return preg_split('/(\s*(?<!\()\)|\w*\((?!\))|\bAND\b|\bOR\b\s*)/i', $cond, -1,
 			PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
 	}
@@ -2186,8 +2140,7 @@ class CortexQueryParser extends \Prefab {
 	 * @param $args
 	 * @return array
 	 */
-	protected function convertNamedParams($parts, $args)
-	{
+	protected function convertNamedParams($parts, $args) {
 		if (empty($args)) return array($parts, $args);
 		$params = array();
 		$pos = 0;
@@ -2234,8 +2187,7 @@ class CortexQueryParser extends \Prefab {
 	 * @param $args
 	 * @return array
 	 */
-	protected function _jig_parse_filter($where, $args)
-	{
+	protected function _jig_parse_filter($where, $args) {
 		$parts = $this->splitLogical($where);
 		if (is_int(strpos($where, ':')))
 			list($parts, $args) = $this->convertNamedParams($parts, $args);
@@ -2295,8 +2247,7 @@ class CortexQueryParser extends \Prefab {
 	 * @param $parts
 	 * @return array
 	 */
-	protected function _mongo_parse_logical_op($parts)
-	{
+	protected function _mongo_parse_logical_op($parts) {
 		$b_offset = 0;
 		$ncond = array();
 		$child = array();
@@ -2347,8 +2298,7 @@ class CortexQueryParser extends \Prefab {
 	 * @param null $fieldConf
 	 * @return array|null
 	 */
-	protected function _mongo_parse_relational_op($part, &$args, $fieldConf=null)
-	{
+	protected function _mongo_parse_relational_op($part, &$args, $fieldConf=null) {
 		if (is_null($part))
 			return $part;
 		if (preg_match('/\<\=|\>\=|\<\>|\<|\>|\!\=|\=\=|\=|like|not like|in|not in/i', $part, $match)) {
@@ -2398,8 +2348,7 @@ class CortexQueryParser extends \Prefab {
 	 * @param string $var
 	 * @return string
 	 */
-	protected function _likeValueToRegEx($var)
-	{
+	protected function _likeValueToRegEx($var) {
 		$lC = substr($var, -1, 1);
 		// %var% -> /var/
 		if ($var[0] == '%' && $lC == '%')
@@ -2424,8 +2373,7 @@ class CortexQueryParser extends \Prefab {
 	 * @param string $engine
 	 * @return array|null
 	 */
-	public function prepareOptions($options, $engine)
-	{
+	public function prepareOptions($options, $engine) {
 		if (empty($options) || !is_array($options))
 			return null;
 		switch ($engine) {
@@ -2483,7 +2431,7 @@ class CortexCollection extends \ArrayIterator {
 	 * set a collection of models
 	 * @param $models
 	 */
-	function setModels($models,$init=true) {
+	function setModels($models, $init=true) {
 		array_map(array($this,'add'),$models);
 		if ($init)
 			$this->changed = false;
@@ -2544,7 +2492,7 @@ class CortexCollection extends \ArrayIterator {
 	 * @param array|string $keys
 	 * @return array
 	 */
-	public function getSubset($prop,$keys) {
+	public function getSubset($prop, $keys) {
 		if (is_string($keys))
 			$keys = \Base::instance()->split($keys);
 		if (!is_array($keys))
@@ -2565,8 +2513,7 @@ class CortexCollection extends \ArrayIterator {
 	 * @param bool $raw
 	 * @return array
 	 */
-	public function getAll($prop, $raw = false)
-	{
+	public function getAll($prop, $raw = false) {
 		$out = array();
 		foreach ($this->getArrayCopy() as $model) {
 			if ($model instanceof Cortex && $model->exists($prop,true)) {
@@ -2597,8 +2544,7 @@ class CortexCollection extends \ArrayIterator {
 	 * @param bool $nested
 	 * @return array
 	 */
-	public function getBy($index, $nested = false)
-	{
+	public function getBy($index, $nested = false) {
 		$out = array();
 		foreach ($this->getArrayCopy() as $model)
 			if ($model->exists($index)) {
@@ -2614,7 +2560,7 @@ class CortexCollection extends \ArrayIterator {
 	 * re-assort the current collection using a sql-like syntax
 	 * @param $cond
 	 */
-	public function orderBy($cond){
+	public function orderBy($cond) {
 		$cols=\Base::instance()->split($cond);
 		$this->uasort(function($val1,$val2) use($cols) {
 			foreach ($cols as $col) {
@@ -2635,7 +2581,7 @@ class CortexCollection extends \ArrayIterator {
 	 * @param $offset
 	 * @param null $limit
 	 */
-	public function slice($offset,$limit=null) {
+	public function slice($offset, $limit=null) {
 		$this->rewind();
 		$i=0;
 		$del=array();
