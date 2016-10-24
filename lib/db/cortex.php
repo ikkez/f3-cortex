@@ -784,21 +784,9 @@ class Cortex extends Cursor {
 					// factory new mappers
 					$mapper = clone($this->mapper);
 					$mapper->reset();
-					// TODO: refactor this. Reflection can be removed for F3 >= v3.4.1
 					$mapper->query= array($record);
-					$m_adhoc = empty($adhoc) ? array() : $m_refl_adhoc;
 					foreach ($record as $key=>$val)
-						if (isset($m_refl_adhoc[$key]))
-							$m_adhoc[$key]['value']=$val;
-						else
-							$mapper->set($key, $val);
-					if (!empty($adhoc)) {
-						$refl = new \ReflectionObject($mapper);
-						$prop = $refl->getProperty('adhoc');
-						$prop->setAccessible(true);
-						$prop->setValue($mapper,$m_adhoc);
-						$prop->setAccessible(false);
-					}
+						$mapper->set($key, $val);
 					$record = $mapper;
 					unset($record, $mapper);
 				}
@@ -1391,7 +1379,7 @@ class Cortex extends Cursor {
 				$prop = $refl->getProperty('fields');
 				$prop->setAccessible(true);
 				$fields = $prop->getValue($this->mapper);
-				$fields[$key] = $newField + array('value'=>NULL,'changed'=>NULL);
+				$fields[$key] = $newField + array('value'=>NULL,'initial'=>NULL,'changed'=>NULL);
 				$prop->setValue($this->mapper,$fields);
 			}
 		}
