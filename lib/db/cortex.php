@@ -1238,6 +1238,8 @@ class Cortex extends Cursor {
 	 * @param $val mixed
 	 */
 	function set($key, $val) {
+		if ($key == '_id' && $this->dbsType == 'sql')
+			$key = $this->primary;
 		$fields = $this->fieldConf;
 		unset($this->fieldsCache[$key]);
 		// pre-process if field config available
@@ -1401,7 +1403,6 @@ class Cortex extends Cursor {
 	 * virtual mapper field setter
 	 * @param string $key
 	 * @param mixed|callback $val
-	 * @return mixed|null
 	 */
 	public function virtual($key, $val) {
 		$this->vFields[$key]=$val;
