@@ -305,8 +305,11 @@ class Test_Relation {
 		$tag3 = $tag->load(array($tag_pk.' = ?',$tag_id[2]));
 		$news->tags2[] = $tag3;
 		$news->save();
+		$a=count($news->tags2);
+		$news->reset();
+		$news->load(array($news_pk.' = ?',$news_id[0]));
 		$test->expect(
-			count($news->tags2) == 3,
+			count($news->tags2) == 3 && $a == 3,
 			$type.': many-to-many relation added implicitly'
 		);
 
@@ -320,6 +323,27 @@ class Test_Relation {
 			$type.': many-to-many relation released'
 		);
 
+		$news->reset();
+		$news->title='Can it run Crysis?';
+		$news->text='XOXO';
+		$news->tags2 = array($tag_id[0]);
+		$news->save();
+		$news_id[] = $news->_id;
+		$news->reset();
+		$news->load(array($news_pk.' = ?', $news_id[3]));
+		$a=count($news->tags2);
+		$tag1 = $tag->find(array($tag_pk.' = ?',$tag_id[0]));
+		$b=count($tag1[0]->news);
+		$c=$tag1[0]->news[0]->title == 'Can it run Crysis?';
+		$news->erase();
+		$tag1 = $tag->find(array($tag_pk.' = ?',$tag_id[0]));
+		$d=count($tag1[0]->news);
+		$test->expect(
+			$a == 1 && $b == 1 && $c && $d == 0,
+			$type.': many-to-many relation cleaned by erase cascade'
+		);
+
+		$news->load(array($news_pk.' = ?', $news_id[0]));
 		$all = $news->find();
 		$test->expect(
 			$all[1]->tags2 === NULL
@@ -343,5 +367,4 @@ class Test_Relation {
 		///////////////////////////////////
 		return $test->results();
 	}
-
 }
