@@ -1342,6 +1342,7 @@ class Cortex extends Cursor {
 				elseif (is_double($val)) $type = $schema::DT_DOUBLE;
 				elseif (is_float($val)) $type = $schema::DT_FLOAT;
 				elseif (is_bool($val)) $type = $schema::DT_BOOLEAN;
+				elseif (strlen($val)>10 && strtotime($val)) $type = $schema::DT_DATETIME;
 				elseif (date('Y-m-d H:i:s', strtotime($val)) == $val) $type = $schema::DT_DATETIME;
 				elseif (date('Y-m-d', strtotime($val)) == $val) $type = $schema::DT_DATE;
 				elseif (\UTF::instance()->strlen($val)<=255) $type = $schema::DT_VARCHAR256;
