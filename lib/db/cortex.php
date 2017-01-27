@@ -1593,7 +1593,7 @@ class Cortex extends Cursor {
 					$rel = $this->getRelFromConf($relConf,$key);
 					$fkeys = array();
 					foreach ($result as $el)
-						$fkeys[] = is_int($el)||ctype_digit($el)?(int)$el:(string)$el;
+						$fkeys[] = (is_int($el)||ctype_digit($el))?(int)$el:(string)$el;
 					// if part of a result set
 					if ($cx = $this->getCollection()) {
 						if (!$cx->hasRelSet($key)) {
@@ -1608,11 +1608,14 @@ class Cortex extends Cursor {
 							} else
 								$relKeys = call_user_func_array('array_merge', $relKeys);
 							// get related models
-							$crit = array($relConf[1].' IN ?', array_unique($relKeys));
-							$relSet = $rel->find($this->mergeWithRelFilter($key, $crit),
+							if (!empty($relKeys)) {
+								$crit = array($relConf[1].' IN ?', array_unique($relKeys));
+								$relSet = $rel->find($this->mergeWithRelFilter($key, $crit),
 								$this->getRelFilterOption($key),$this->_ttl);
-							// cache relSet, sorted by ID
-							$cx->setRelSet($key, $relSet ? $relSet->getBy($relConf[1]) : NULL);
+								// cache relSet, sorted by ID
+								$cx->setRelSet($key, $relSet ? $relSet->getBy($relConf[1]) : NULL);
+							} else
+								$cx->setRelSet($key, NULL);
 						}
 						// get a subset of the preloaded set
 						$this->fieldsCache[$key] = CortexCollection::factory($cx->getSubset($key, $fkeys));
