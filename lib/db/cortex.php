@@ -307,14 +307,14 @@ class Cortex extends Cursor {
 								&& $relConf['hasRel'] == 'has-many') {
 								// compute mm table name
 								$mmTable = isset($relConf[2]) ? $relConf[2] :
-									static::getMMTableName(
-										$rel['table'], $relConf[1], $table, $key,
-										$rel['fieldConf'][$relConf[1]]['has-many']);
+									static::getMMTableName($rel['table'], $relConf['relField'],
+										$table, $key, $rel['fieldConf'][$relConf[1]]['has-many']);
 								if (!in_array($mmTable,$schema->getTables())) {
 									$mmt = $schema->createTable($mmTable);
-									$mmt->addColumn($relConf[1])->type($relConf['relFieldType']);
+									$relField = $relConf['relField'].($relConf['isSelf']?'_ref':'');
+									$mmt->addColumn($relField)->type($relConf['relFieldType']);
 									$mmt->addColumn($key)->type($field['type']);
-									$index = array($relConf[1],$key);
+									$index = array($relField,$key);
 									sort($index);
 									$mmt->addIndex($index);
 									$mmt->build();
@@ -443,6 +443,9 @@ class Cortex extends Cursor {
 		}
 		$mmTable = array($ftable.'__'.$fkey, $ptable.'__'.$pkey);
 		natcasesort($mmTable);
+		// shortcut for self-referencing mm tables
+		if ($mmTable[0] == $mmTable[1] || ($fConf && $fConf['isSelf']==true))
+			return array_shift($mmTable);
 		$return = strtolower(str_replace('\\', '_', implode('_mm_', $mmTable)));
 		return $return;
 	}
@@ -468,8 +471,8 @@ class Cortex extends Cursor {
 
 	/**
 	 * resolve relation field types
-	 * @param $field
-	 * @return mixed
+	 * @param array $field
+	 * @return array
 	 */
 	protected static function resolveRelationConf($field) {
 		if (array_key_exists('belongs-to-one', $field)) {
@@ -502,13 +505,16 @@ class Cortex extends Cursor {
 				return $field;
 			$rel = $relConf[0]::resolveConfiguration();
 			if(array_key_exists('has-many',$rel['fieldConf'][$relConf[1]])) {
+				// has-many <> has-many (m:m)
 				$field['has-many']['hasRel'] = 'has-many';
+				$field['has-many']['isSelf'] = (ltrim($relConf[0],'\\')==get_called_class());
 				$field['has-many']['relTable'] = $rel['table'];
 				$field['has-many']['relField'] = $relConf[1];
 				$field['has-many']['relFieldType'] = isset($rel['fieldConf'][$relConf[1]]['type']) ?
 					$rel['fieldConf'][$relConf[1]]['type'] : Schema::DT_INT;
 				$field['has-many']['relPK'] = isset($relConf[3])?$relConf[3]:$rel['primary'];
 			} else {
+				// has-many <> belongs-to-one (m:1)
 				$field['has-many']['hasRel'] = 'belongs-to-one';
 				$toConf=$rel['fieldConf'][$relConf[1]]['belongs-to-one'];
 				if (is_array($toConf))
@@ -872,9 +878,19 @@ class Cortex extends Cursor {
 			$hasIDs = $hasSet->getAll('_id',true);
 			$mmTable = $this->mmTable($fieldConf,$key);
 			$pivot = $this->getRelInstance(null,array('db'=>$this->db,'table'=>$mmTable));
-			$pivotSet = $pivot->find(array($key.' IN ?',$hasIDs),null,$ttl);
-			if ($pivotSet)
-				$result = array_unique($pivotSet->getAll($fieldConf['relField'],true));
+			$filter = [$key.' IN ?',$hasIDs];
+			if ($fieldConf['isSelf']) {
+				$filter[0].= ' OR '.$key.'_ref IN ?';
+				$filter[] = $hasIDs;
+			}
+			$pivotSet = $pivot->find($filter,null,$ttl);
+			if ($pivotSet) {
+				$result = $pivotSet->getAll($fieldConf['relField'],true);
+				if ($fieldConf['isSelf'])
+					$result = array_merge($result,
+						$pivotSet->getAll($fieldConf['relField'].'_ref',true));
+				$result = array_diff(array_unique($result),$hasIDs);
+			}
 		}
 		return $result;
 	}
@@ -884,11 +900,26 @@ class Cortex extends Cursor {
 	 */
 	protected function _hasJoinMM_sql($key, $hasCond, &$filter, &$options) {
 		$fieldConf = $this->fieldConf[$key]['has-many'];
+		$relTable = $fieldConf['relTable'];
 		$hasJoin = array();
 		$mmTable = $this->mmTable($fieldConf,$key);
-		$hasJoin[] = $this->_sql_left_join($this->primary,$this->table,$fieldConf['relField'],$mmTable);
-		$hasJoin[] = $this->_sql_left_join($key,$mmTable,$fieldConf['relPK'],$fieldConf['relTable']);
-		$this->_sql_mergeRelCondition($hasCond,$fieldConf['relTable'],$filter,$options);
+		if ($fieldConf['isSelf']) {
+			$relTable .= '_ref';
+			$hasJoin[] = $this->_sql_left_join($this->primary,$this->table,$fieldConf['relField'].'_ref',$mmTable);
+			$hasJoin[] = $this->_sql_left_join($key,$mmTable,$fieldConf['relPK'],
+				[$fieldConf['relTable'],$relTable]);
+			// cross-linked
+			$hasJoin[] = $this->_sql_left_join($this->primary,$this->table,
+				$fieldConf['relField'],[$mmTable,$mmTable.'_c']);
+			$hasJoin[] = $this->_sql_left_join($key.'_ref',$mmTable.'_c',$fieldConf['relPK'],
+				[$fieldConf['relTable'],$relTable.'_c']);
+			$this->_sql_mergeRelCondition($hasCond,$relTable,$filter,$options);
+			$this->_sql_mergeRelCondition($hasCond,$relTable.'_c',$filter,$options,'OR');
+		} else {
+			$hasJoin[] = $this->_sql_left_join($this->primary,$this->table,$fieldConf['relField'],$mmTable);
+			$hasJoin[] = $this->_sql_left_join($key,$mmTable,$fieldConf['relPK'],$relTable);
+			$this->_sql_mergeRelCondition($hasCond,$relTable,$filter,$options);
+		}
 		return $hasJoin;
 	}
 
@@ -908,30 +939,43 @@ class Cortex extends Cursor {
 
 	/**
 	 * assemble SQL join query string
+	 * @param string $skey
+	 * @param string $sTable
+	 * @param string $fkey
+	 * @param string|array $fTable
+	 * @return string
 	 */
 	protected function _sql_left_join($skey, $sTable, $fkey, $fTable) {
+		if (is_array($fTable))
+			list($fTable,$fTable_alias) = $fTable;
 		$skey = $this->db->quotekey($skey);
 		$sTable = $this->db->quotekey($sTable);
 		$fkey = $this->db->quotekey($fkey);
 		$fTable = $this->db->quotekey($fTable);
-		return 'LEFT JOIN '.$fTable.' ON '.$sTable.'.'.$skey.' = '.$fTable.'.'.$fkey;
+		if (isset($fTable_alias)) {
+			$fTable_alias = $this->db->quotekey($fTable_alias);
+			return 'LEFT JOIN '.$fTable.' AS '.$fTable_alias.' ON '.$sTable.'.'.$skey.' = '.$fTable_alias.'.'.$fkey;
+		} else
+			return 'LEFT JOIN '.$fTable.' ON '.$sTable.'.'.$skey.' = '.$fTable.'.'.$fkey;
 	}
 
 	/**
 	 * merge condition of relation with current condition
-	 * @param array $cond		condition of related model
-	 * @param string $table		table of related model
-	 * @param array $filter		current filter to merge with
-	 * @param array $options	current options to merge with
+	 * @param array $cond condition of related model
+	 * @param string $table table of related model
+	 * @param array $filter current filter to merge with
+	 * @param array $options current options to merge with
+	 * @param string $glue
 	 */
-	protected function _sql_mergeRelCondition($cond, $table, &$filter, &$options) {
+	protected function _sql_mergeRelCondition($cond, $table, &$filter, &$options, $glue='AND') {
 		if (!empty($cond[0])) {
 			$whereClause = '('.array_shift($cond[0]).')';
 			$whereClause = $this->_sql_prependTableToFields($whereClause,$table);
 			if (!$filter)
 				$filter = array($whereClause);
 			elseif (!empty($filter[0]))
-				$filter[0] = '('.$this->_sql_prependTableToFields($filter[0],$this->table).') and '.$whereClause;
+				$filter[0] = '('.$this->_sql_prependTableToFields($filter[0],$this->table)
+					.') '.$glue.' '.$whereClause;
 			$filter = array_merge($filter, $cond[0]);
 		}
 		if ($cond[1] && isset($cond[1]['group'])) {
@@ -1089,15 +1133,22 @@ class Cortex extends Cursor {
 					$mmTable = $this->mmTable($relConf,$key);
 					$rel = $this->getRelInstance(null, array('db'=>$this->db, 'table'=>$mmTable));
 					$id = $this->get($relConf['relPK'],true);
+					$filter = [$relConf['relField'].' = ?',$id];
+					if ($relConf['isSelf']) {
+						$filter[0].= ' OR '.$relConf['relField'].'_ref = ?';
+						$filter[] = $id;
+					}
 					// delete all refs
 					if (is_null($val))
-						$rel->erase(array($relConf['relField'].' = ?', $id));
+						$rel->erase($filter);
 					// update refs
 					elseif (is_array($val)) {
-						$rel->erase(array($relConf['relField'].' = ?', $id));
+						$rel->erase($filter);
 						foreach($val as $v) {
+							if ($relConf['isSelf'] && $v==$id)
+								continue;
 							$rel->set($key,$v);
-							$rel->set($relConf['relField'],$id);
+							$rel->set($relConf['relField'].($relConf['isSelf']?'_ref':''),$id);
 							$rel->save();
 							$rel->reset();
 						}
@@ -1531,7 +1582,12 @@ class Cortex extends Cursor {
 							// get IDs of all results
 							$relKeys = $cx->getAll($id,true);
 							// get all pivot IDs
-							$mmRes = $rel->find(array($fromConf['relField'].' IN ?', $relKeys),null,$this->_ttl);
+							$filter = [$fromConf['relField'].' IN ?',$relKeys];
+							if ($fromConf['isSelf']) {
+								$filter[0].= ' OR '.$fromConf['relField'].'_ref IN ?';
+								$filter[] = $relKeys;
+							}
+							$mmRes = $rel->find($filter,null,$this->_ttl);
 							if (!$mmRes)
 								$cx->setRelSet($key, NULL);
 							else {
@@ -1539,15 +1595,23 @@ class Cortex extends Cursor {
 								$pivotKeys = array();
 								foreach($mmRes as $model) {
 									$val = $model->get($key,true);
-									$pivotRel[ (string) $model->get($fromConf['relField'])][] = $val;
-									$pivotKeys[] = $val;
+									if ($fromConf['isSelf']) {
+										$refVal = $model->get($fromConf['relField'].'_ref',true);
+										$pivotRel[(string) $refVal][] = $val;
+										$pivotRel[(string) $val][] = $refVal;
+										$pivotKeys[] = $val;
+										$pivotKeys[] = $refVal;
+									} else {
+										$pivotRel[ (string) $model->get($fromConf['relField'])][] = $val;
+										$pivotKeys[] = $val;
+									}
 								}
 								// cache pivot keys
 								$cx->setRelSet($key.'_pivot', $pivotRel);
 								// preload all rels
 								$pivotKeys = array_unique($pivotKeys);
 								$fRel = $this->getRelInstance($fromConf[0],null,$key,true);
-								$crit = array($toConf['relPK'].' IN ?', $pivotKeys);
+								$crit = array($id.' IN ?', $pivotKeys);
 								$relSet = $fRel->find($this->mergeWithRelFilter($key, $crit),
 									$this->getRelFilterOption($key),$this->_ttl);
 								$cx->setRelSet($key, $relSet ? $relSet->getBy($id) : NULL);
@@ -1561,12 +1625,23 @@ class Cortex extends Cursor {
 					} // no collection
 					else {
 						// find foreign keys
-						$results = $rel->find(
-							array($fromConf['relField'].' = ?', $this->get($fromConf['relPK'],true)),null,$this->_ttl);
-						if(!$results)
+						$fId=$this->get($fromConf['relPK'],true);
+						$filter = [$fromConf['relField'].' = ?',$fId];
+						if ($fromConf['isSelf']) {
+							$filter = [$fromConf['relField'].' = ?',$fId];
+							$filter[0].= ' OR '.$fromConf['relField'].'_ref = ?';
+							$filter[] = $filter[1];
+						}
+						$results = $rel->find($filter,null,$this->_ttl);
+						if (!$results)
 							$this->fieldsCache[$key] = NULL;
 						else {
 							$fkeys = $results->getAll($key,true);
+							if ($fromConf['isSelf']) {
+								// merge both rel sides and remove itself
+								$fkeys = array_diff(array_merge($fkeys,
+									$results->getAll($key.'_ref',true)),[$fId]);
+							}
 							// create foreign table mapper
 							unset($rel);
 							$rel = $this->getRelInstance($fromConf[0],null,$key,true);
