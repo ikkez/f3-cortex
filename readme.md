@@ -38,6 +38,10 @@ It's great for fast and easy data abstraction and offers a bunch of useful filte
 4. [Relations](#relations)
 	1. [Setup the linkage](#setup-the-linkage)
 	2. [Working with Relations](#working-with-relations)
+		1. [One-To-One](#one-to-one)
+		2. [Many-To-Many, bidirectional](#many-to-many-bidirectional)
+		3. [Many-To-Many, unidirectional](#many-to-many-unidirectional)
+		4. [Many-To-Many, self-referencing](#many-to-many-self-referencing)
 5. [Event Handlers](#event-handlers)
 	1. [Custom Field Handler](#custom-field-handler)
 6. [Filter Query Syntax](#filter-query-syntax)
@@ -563,7 +567,7 @@ In case you want to bind a many-to-many relation to itself, meaning that you'd l
     </tr>
 </table>
 
-A common scenario is where a `User` have friends and that relation target is also `User`. So in you would bind the relation to itself: 
+A common scenario is where a `User` has friends and that relation target is also `User`. So in you would bind the relation to itself: 
 
 ```php
 namespace Model;
@@ -580,7 +584,7 @@ Because this is also a many to many relation, a pivor table is needed too. It's 
 
 ![Cortex m:m self-ref](https://yuml.me/9467f355)
 
-Usually, this is a bidirectional relation, meaning that you would get a direct linkage to your friends (`friends`), and another one to the inverse linkages (friends with me `friends_ref`). As this is pretty inconvenient for further working and filtering on those, both
+Usually, this is a bidirectional relation, meaning that you would get a direct linkage to your friends (`friends`), and another one to the inverse linkage (friends with me, `friends_ref`). As this is pretty inconvenient for further working and filtering on those, both
 fields are linked together internally and will always represent **all** relations, whether the relation was added from UserA or UserB.
   
 ```php
