@@ -2251,12 +2251,14 @@ class CortexQueryParser extends \Prefab {
 	 * @return string
 	 */
 	public function sql_quoteCondition($cond, $db, $table=false) {
-//		if (preg_match('/[`\'"\[\]]/i',$cond))
-//			return $cond;
 		// https://www.debuggex.com/r/6AXwJ1Y3Aac8aocQ/3
 		// https://regex101.com/r/yM5vK4/1
-		return preg_replace_callback('/(\w+\((?:[^)(]+|(?R))*\))|'.
-			'(?:(\b[a-zA-Z_](?:[\w\-_.]+\.?))(?=[\s<>=!)]|$))/i',
+		// this took me lots of sleepless nights
+		return preg_replace_callback('/'.
+			'(\w+\((?:[^)(]+|(?R))*\))|'. // exclude SQL function names "foo("
+			'(?:(\b(?<!:)'. // exclude bind parameter ":foo"
+			'[a-zA-Z_](?:[\w\-_.]+\.?))'. // match only identifier, exclude values
+			'(?=[\s<>=!)]|$))/i', // only when part of condition or within brackets
 			function($match) use($table,$db) {
 				if (!isset($match[2]))
 					return $match[1];
