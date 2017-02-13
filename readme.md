@@ -544,6 +544,77 @@ echo $news->tags[0]->title; // Web Design
 echo $news->tags[1]->title; // Responsive
 ```
 
+#### many-to-many, self-referencing
+
+In case you want to bind a many-to-many relation to itself, meaning that you'd like to add it to the own property of the same model, you can do this too, since these are detected as self-referenced fields now.
+
+<table>
+    <tr>
+        <th>Type</th>
+        <th>Model A</th>
+        <th>Direction</th>
+        <th>Model A</th>
+    </tr>
+    <tr>
+        <td>m:m</td>
+        <td>has-many</td>
+        <td>&lt;--&gt;</td>
+        <td>has-many</td>
+    </tr>
+</table>
+
+A common scenario is where a `User` have friends and that relation target is also `User`. So in you would bind the relation to itself: 
+
+```php
+namespace Model;
+class User extends \DB\Cortex {
+  protected $fieldConf = [
+    'friends' => [
+      'has-many' => ['\Model\User','friends']
+    ]
+  ];
+}
+```
+
+Because this is also a many to many relation, a pivor table is needed too. It's name is generated based on the table and fields name, but can also be defined as 3rd array parameter, i.e. `['\Model\User','friends','user_friends']`.
+
+![Cortex m:m self-ref](https://yuml.me/9467f355)
+
+Usually, this is a bidirectional relation, meaning that you would get a direct linkage to your friends (`friends`), and another one to the inverse linkages (friends with me `friends_ref`). As this is pretty inconvenient for further working and filtering on those, both
+fields are linked together internally and will always represent **all** relations, whether the relation was added from UserA or UserB.
+  
+```php
+$userA = new \Model\User();
+$userA->load(['_id = ?', 1]);
+
+$userB = new \Model\User();
+$userB->load(['_id = ?', 2]);
+
+$userC = new \Model\User();
+$userC->load(['_id = ?', 3]);
+
+if ($userA->friends)
+	$userA[] = $userB;
+else 
+	$userA = array($userB);
+	
+$userA->save();
+
+$userC->friends = [$userA,$userB];
+$userC->save();
+```
+  
+The only exception is, that the current record itself is always excluded, so you wont get UserA as friend of UserA:
+
+```php
+$userA->load(['_id = ?', 1]);
+$userA->friends->getAll('_id'); // [2,3]
+$userB->load(['_id = ?', 2]);
+$userB->friends->getAll('_id'); // [1,3]
+$userC->load(['_id = ?', 3]);
+$userC->friends->getAll('_id'); // [1,2]
+```
+  
 
 ## Event Handlers
 
@@ -633,11 +704,53 @@ These common filter operators are supported:
 - search operators: `LIKE`,`NOT LIKE`, `IN`, `NOT IN` (not case-sensitive)
 - logical operators: `(`, `)`, `AND`, `OR`, `&&`, `||`
 
-When using comparison operators, you can compare your table fields against simple values like `array('foo = 1')` or other fields like `array('foo < bar')`. Therefore you can also use placeholders with positional bind-parameters like `array('foo = ?',1)` or named parameters `array('foo = :bar',':bar'=>1)`. You may also mix them together in one query.
+**Comparison**
 
-The `LIKE` operator works the same way like the [F3 SQL search syntax](http://www.fatfreeframework.com/sql-mapper#search). The search wildcard (`%`) belongs into the bind value, not the query string.
+With comparison operators, you can do the following things:
+ 
+*  compare fields against other fields:
 
-The `IN` operator usually needs multiple placeholders in raw PDO (like `foo IN (?,?,?)`). In Cortex queries you simply use an array for this: `array('foo IN ?',array(1,2,3))`, the QueryParser does the rest.
+	`array('foo < bar')`
+	
+*  compare fields against values:
+
+	`array('foo >= 1')` or `array('foo == \'bar\'')`
+	
+Especially for value comparison, it's **highly recommended** to use placeholders in your filter and bind their values accordingly. This ensures that the data mapper uses parameterized queries for better security. Placeholders go like this:
+
+*  positional bind-parameters:
+
+	`array('foo = ?', 1)` or `array('foo = ? AND bar < ?', 'baz', 7)`
+
+*  named bind-parameters:
+
+	`array('foo = :foo',':foo'=>1)`
+
+	`array('foo = :foo AND bar < :bar',':foo'=>'hallo', ':bar'=>7)`
+	
+**Sugar**
+
+*  what's a special sugar in Cortex is, that you can also mix both types together:
+
+	`array('foo = ? AND bar < :bar', 'bar', ':bar'=>7)`
+
+*  and you can also reuse named parameter (not possible in raw PDO):
+
+	`array('min > :num AND max < :num', ':num' => 7)`
+
+*  comparison with `NULL` (nullable fields) works this easy:
+
+	`array('foo = ?', NULL)` or `array('foo != ?', NULL)`
+
+**Search**
+
+*  The `LIKE` operator works the same way like the [F3 SQL search syntax](http://www.fatfreeframework.com/sql-mapper#search). The search wildcard (`%`) belongs into the bind value, not the query string.
+
+	`array('title LIKE ?', '%castle%')` or `array('email NOT LIKE ?', '%gmail.com')`
+
+*  The `IN` operator usually needs multiple placeholders in raw PDO (like `foo IN (?,?,?)`). In Cortex queries you simply use an array for this, the QueryParser does the rest.
+
+	`array('foo IN ?', array(1,2,3))`
 
 
 ### Options
