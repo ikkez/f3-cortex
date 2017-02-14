@@ -97,7 +97,7 @@ class Cortex extends Cursor {
 		if (!is_null($fluid))
 			$this->fluid = $fluid;
 		if (!is_object($this->db=(is_string($db=($db?:$this->db))?\Base::instance()->get($db):$db)))
-			trigger_error(self::E_CONNECTION);
+			trigger_error(self::E_CONNECTION,E_USER_ERROR);
 		if ($this->db instanceof Jig)
 			$this->dbsType = 'jig';
 		elseif ($this->db instanceof SQL)
@@ -112,7 +112,7 @@ class Cortex extends Cursor {
 			$this->primary = 'id';
 		$this->table = $this->getTable();
 		if (!$this->table)
-			trigger_error(self::E_NO_TABLE);
+			trigger_error(self::E_NO_TABLE,E_USER_ERROR);
 		$this->ttl = $ttl ?: 60;
 		if (!$this->rel_ttl)
 			$this->rel_ttl = 0;
@@ -139,7 +139,7 @@ class Cortex extends Cursor {
 				$this->mapper = new Mongo\Mapper($this->db, $this->table);
 				break;
 			default:
-				trigger_error(sprintf(self::E_UNKNOWN_DB_ENGINE,$this->dbsType));
+				trigger_error(sprintf(self::E_UNKNOWN_DB_ENGINE,$this->dbsType),E_USER_ERROR);
 		}
 		$this->queryParser = CortexQueryParser::instance();
 		$this->reset();
@@ -278,14 +278,14 @@ class Cortex extends Cursor {
 		if (is_null($db) || is_null($table) || is_null($fields))
 			$df = $self::resolveConfiguration();
 		if (!is_object($db=(is_string($db=($db?:$df['db']))?\Base::instance()->get($db):$db)))
-			trigger_error(self::E_CONNECTION);
+			trigger_error(self::E_CONNECTION,E_USER_ERROR);
 		if (strlen($table=$table?:$df['table'])==0)
-			trigger_error(self::E_NO_TABLE);
+			trigger_error(self::E_NO_TABLE,E_USER_ERROR);
 		if (is_null($fields))
 			if (!empty($df['fieldConf']))
 				$fields = $df['fieldConf'];
 			elseif(!$df['fluid']) {
-				trigger_error(self::E_FIELD_SETUP);
+				trigger_error(self::E_FIELD_SETUP,E_USER_ERROR);
 				return false;
 			} else
 				$fields = array();
@@ -374,9 +374,9 @@ class Cortex extends Cursor {
 		if (is_null($db) || is_null($table))
 			$df = $self::resolveConfiguration();
 		if (!is_object($db=(is_string($db=($db?:$df['db']))?\Base::instance()->get($db):$db)))
-			trigger_error(self::E_CONNECTION);
+			trigger_error(self::E_CONNECTION,E_USER_ERROR);
 		if (strlen($table=strtolower($table?:$df['table']))==0)
-			trigger_error(self::E_NO_TABLE);
+			trigger_error(self::E_NO_TABLE,E_USER_ERROR);
 		if (isset($df) && !empty($df['fieldConf']))
 			$fields = $df['fieldConf'];
 		else
@@ -436,10 +436,10 @@ class Cortex extends Cursor {
 			$self = get_called_class();
 			// check for a matching config
 			if (!is_int(strpos($fclass, $self)))
-				trigger_error(sprintf(self::E_MM_REL_CLASS, $fclass, $self));
+				trigger_error(sprintf(self::E_MM_REL_CLASS, $fclass, $self),E_USER_ERROR);
 			if ($pfkey != $pkey)
 				trigger_error(sprintf(self::E_MM_REL_FIELD,
-					$fclass.'.'.$pfkey, $self.'.'.$pkey));
+					$fclass.'.'.$pfkey, $self.'.'.$pkey),E_USER_ERROR);
 		}
 		$mmTable = array($ftable.'__'.$fkey, $ptable.'__'.$pkey);
 		natcasesort($mmTable);
@@ -653,7 +653,7 @@ class Cortex extends Cursor {
 					case 'has-one':
 					case 'has-many':
 						if (!is_array($fromConf))
-							trigger_error(sprintf(self::E_REL_CONF_INC, $key));
+							trigger_error(sprintf(self::E_REL_CONF_INC, $key),E_USER_ERROR);
 						$id = $this->dbsType == 'sql' ? $this->primary : '_id';
 						if ($type=='has-many' && isset($fromConf['relField'])
 							&& $fromConf['hasRel'] == 'belongs-to-one')
@@ -693,7 +693,7 @@ class Cortex extends Cursor {
 								$addToFilter = array($key.' IN ?', $result);
 						break;
 					default:
-						trigger_error(self::E_HAS_COND);
+						trigger_error(self::E_HAS_COND,E_USER_ERROR);
 				}
 				if (isset($result) && !isset($addToFilter))
 					return false;
@@ -833,9 +833,9 @@ class Cortex extends Cursor {
 			$this->hasCond[$key.'.'][$fkey] = array($filter,$options);
 		} else {
 			if (!isset($this->fieldConf[$key]))
-				trigger_error(sprintf(self::E_UNKNOWN_FIELD,$key,get_called_class()));
+				trigger_error(sprintf(self::E_UNKNOWN_FIELD,$key,get_called_class()),E_USER_ERROR);
 			if (!isset($this->fieldConf[$key]['relType']))
-				trigger_error(self::E_HAS_COND);
+				trigger_error(self::E_HAS_COND,E_USER_ERROR);
 			$this->hasCond[$key] = array($filter,$options);
 		}
 		return $this;
@@ -1203,7 +1203,7 @@ class Cortex extends Cursor {
 						"initial" => array("count_".$key => 0)
 					));
 				else
-					trigger_error('Cannot add direct relational counter.');
+					trigger_error('Cannot add direct relational counter.',E_USER_ERROR);
 			} elseif($this->fieldConf[$key]['relType'] == 'has-many') {
 				$relConf=$this->fieldConf[$key]['has-many'];
 			 	if ($relConf['hasRel']=='has-many') {
@@ -1309,7 +1309,7 @@ class Cortex extends Cursor {
 					!($this->dbsType=='mongo' && $val instanceof \MongoId)) {
 					// fetch fkey from mapper
 					if (!$val instanceof Cortex || $val->dry())
-						trigger_error(self::E_INVALID_RELATION_OBJECT);
+						trigger_error(self::E_INVALID_RELATION_OBJECT,E_USER_ERROR);
 					else {
 						$relConf = $fields[$key]['belongs-to-one'];
 						$rel_field = (is_array($relConf) ? $relConf[1] : '_id');
@@ -1351,7 +1351,7 @@ class Cortex extends Cursor {
 					return $val;
 				} elseif ($relConf['hasRel'] == 'belongs-to-one') {
 					// TODO: many-to-one, bidirectional, inverse way
-					trigger_error("not implemented");
+					trigger_error("not implemented",E_USER_ERROR);
 				}
 			}
 			// convert array content
@@ -1361,11 +1361,11 @@ class Cortex extends Cursor {
 				elseif ($fields[$key]['type'] == self::DT_JSON)
 					$val = json_encode($val);
 				else
-					trigger_error(sprintf(self::E_ARRAY_DATATYPE, $key));
+					trigger_error(sprintf(self::E_ARRAY_DATATYPE, $key),E_USER_ERROR);
 			// add nullable polyfill
 			if ($val === NULL && ($this->dbsType == 'jig' || $this->dbsType == 'mongo')
 				&& array_key_exists('nullable', $fields[$key]) && $fields[$key]['nullable'] === false)
-				trigger_error(sprintf(self::E_NULLABLE_COLLISION,$key));
+				trigger_error(sprintf(self::E_NULLABLE_COLLISION,$key),E_USER_ERROR);
 			// MongoId shorthand
 			if ($this->dbsType == 'mongo' && !$val instanceof \MongoId) {
 				if ($key == '_id')
@@ -1531,7 +1531,7 @@ class Cortex extends Cursor {
 				$type = $type ? 'has-one' : 'has-many';
 				$fromConf = $fields[$key][$type];
 				if (!is_array($fromConf))
-					trigger_error(sprintf(self::E_REL_CONF_INC, $key));
+					trigger_error(sprintf(self::E_REL_CONF_INC, $key),E_USER_ERROR);
 				$rel = $this->getRelInstance($fromConf[0],null,$key,true);
 				$relFieldConf = $rel->getFieldConfiguration();
 				$relType = isset($relFieldConf[$fromConf[1]]['belongs-to-one']) ?
@@ -1745,7 +1745,7 @@ class Cortex extends Cursor {
 			$val = \Base::instance()->split($val);
 		elseif (!is_array($val) && !(is_object($val)
 				&& ($val instanceof Cortex && !$val->dry())))
-			trigger_error(sprintf(self::E_MM_REL_VALUE, $key));
+			trigger_error(sprintf(self::E_MM_REL_VALUE, $key),E_USER_ERROR);
 		// hydrated mapper as collection
 		if (is_object($val)) {
 			$nval = array();
@@ -1762,7 +1762,7 @@ class Cortex extends Cursor {
 				if (is_object($item) &&
 					!($isMongo && $item instanceof \MongoId)) {
 					if (!$item instanceof Cortex || $item->dry())
-						trigger_error(self::E_INVALID_RELATION_OBJECT);
+						trigger_error(self::E_INVALID_RELATION_OBJECT,E_USER_ERROR);
 					else $item = $item->get($rel_field,true);
 				}
 				if ($isMongo && $rel_field == '_id' && is_string($item))
@@ -1785,7 +1785,7 @@ class Cortex extends Cursor {
 	 */
 	protected function getRelInstance($model=null, $relConf=null, $key='', $pushFilter=false) {
 		if (!$model && !$relConf)
-			trigger_error(self::E_MISSING_REL_CONF);
+			trigger_error(self::E_MISSING_REL_CONF,E_USER_ERROR);
 		$relConf = $model ? $model::resolveConfiguration() : $relConf;
 		$relName = ($model?:'Cortex').'\\'.$relConf['db']->uuid().
 			'\\'.$relConf['table'].'\\'.$key;
@@ -1795,7 +1795,7 @@ class Cortex extends Cursor {
 		} else {
 			$rel = $model ? new $model : new Cortex($relConf['db'], $relConf['table']);
 			if (!$rel instanceof Cortex)
-				trigger_error(self::E_WRONG_RELATION_CLASS);
+				trigger_error(self::E_WRONG_RELATION_CLASS,E_USER_ERROR);
 			\Registry::set($relName, $rel);
 		}
 		// restrict fields of related mapper
@@ -2180,7 +2180,7 @@ class CortexQueryParser extends \Prefab {
 						$val = array_shift($args);
 						if (is_int($pos = strpos($part, 'IN ?'))) {
 							if (!is_array($val) || empty($val))
-								trigger_error(self::E_INBINDVALUE);
+								trigger_error(self::E_INBINDVALUE,E_USER_ERROR);
 							$bindMarks = str_repeat('?,', count($val) - 1).'?';
 							$part = substr($part, 0, $pos).'IN ('.$bindMarks.')';
 							$ncond = array_merge($ncond, $val);
@@ -2198,7 +2198,7 @@ class CortexQueryParser extends \Prefab {
 //				},''));
 				break;
 			default:
-				trigger_error(self::E_ENGINEERROR);
+				trigger_error(self::E_ENGINEERROR,E_USER_ERROR);
 		}
 		$this->queryCache[$cacheHash] = $ncond;
 		if(isset($ttl) && $f3->get('CACHE')) {
@@ -2233,7 +2233,7 @@ class CortexQueryParser extends \Prefab {
 			if (preg_match('/:\w+/i', $part, $match)) {
 				if (!isset($args[$match[0]]))
 					trigger_error(sprintf(self::E_MISSINGBINDKEY,
-						$match[0]));
+						$match[0]),E_USER_ERROR);
 				$part = str_replace($match[0], '?', $part);
 				$params[] = $args[$match[0]];
 			} elseif (is_int(strpos($part, '?')))
@@ -2352,7 +2352,7 @@ class CortexQueryParser extends \Prefab {
 					$ncond[] = ($this->_mongo_parse_logical_op($child));
 					$child = array();
 				} elseif ($b_offset < 0)
-					trigger_error(self::E_BRACKETS);
+					trigger_error(self::E_BRACKETS,E_USER_ERROR);
 				else
 					// add sub-bracket to parse array
 					$child[] = $part;
@@ -2369,7 +2369,7 @@ class CortexQueryParser extends \Prefab {
 				$ncond[] = $part;
 		}
 		if ($b_offset > 0)
-			trigger_error(self::E_BRACKETS);
+			trigger_error(self::E_BRACKETS,E_USER_ERROR);
 		if (isset($add))
 			return array('$and' => $ncond);
 		elseif (isset($or))
@@ -2583,7 +2583,7 @@ class CortexCollection extends \ArrayIterator {
 		if (is_string($keys))
 			$keys = \Base::instance()->split($keys);
 		if (!is_array($keys))
-			trigger_error(sprintf(self::E_SubsetKeysValue,gettype($keys)));
+			trigger_error(sprintf(self::E_SubsetKeysValue,gettype($keys)),E_USER_ERROR);
 		if (!$this->hasRelSet($prop) || !($relSet = $this->getRelSet($prop)))
 			return null;
 		foreach ($keys as &$key) {
