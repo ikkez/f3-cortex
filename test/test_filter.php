@@ -298,6 +298,38 @@ class Test_Filter {
 			$type.': has-filter and M:M relation counter'
 		);
 
+
+		$author = new AuthorModel();
+		$author->has('friends', ['name LIKE ?','%Scott%']);
+		$res = $author->find();
+		$ids = $res->getAll('_id');
+		$test->expect(
+			$res && count($res) == 2 &&
+			in_array($authorIDs[0],$ids) && in_array($authorIDs[2],$ids),
+			$type.': has-filter on self-ref relation'
+		);
+
+		$author = new AuthorModel();
+		$author->has('friends.news', ['title LIKE ?','%Interface%']);
+		$res = $author->find();
+		$ids = $res->getAll('_id');
+		$test->expect(
+			$res && count($res) == 2 &&
+			in_array($authorIDs[0],$ids) && in_array($authorIDs[2],$ids),
+			$type.': has-filter, nested on self-ref relation'
+		);
+
+		$author = new AuthorModel();
+		$author->has('friends', ['name LIKE ?','%Scott%']);
+		$author->has('news', ['title LIKE ?','%CSS%']);
+		$res = $author->find();
+		$ids = $res->getAll('_id');
+		$test->expect(
+			$res && count($res) == 1 &&
+			in_array($authorIDs[0],$ids),
+			$type.': multiple has-filter on self-ref relation'
+		);
+
 		$news->reset();
 		$news->load(array('_id = ?',$newsIDs[0]));
 		$time = date('Y-m-d H:i:s');

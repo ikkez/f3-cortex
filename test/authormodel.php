@@ -19,6 +19,9 @@ class AuthorModel extends \DB\Cortex {
 			'profile' => array(
 				'has-one' => array('\ProfileModel','author'),
 			),
+			'friends' => array(
+				'has-many' => array('\AuthorModel','friends'),
+			),
 		),
 //		$primary = 'aid',
 		$table = 'author',

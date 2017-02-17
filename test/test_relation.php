@@ -364,6 +364,38 @@ class Test_Relation {
 			);
 		}
 
+		$author = new AuthorModel();
+		$author->load(array($author_pk.' = ?',$author_id[0]));
+		$test->expect(
+			$author->friends === NULL,
+			$type.': self-ref relation is empty'
+		);
+
+		$author->friends = [$author_id[1]];
+		$author->save();
+		$author->reset();
+		$author->load(array($author_pk.' = ?',$author_id[0]));
+		$test->expect(
+			$author->friends && $author->friends[0]->get('_id') == $author_id[1],
+			$type.': self-ref relation populated'
+		);
+		$authorB = $author->findone([$author_pk.' = ?',$author_id[1]]);
+		$test->expect(
+			$authorB->friends && $authorB->friends[0]->get('_id') == $author_id[0],
+			$type.': self-ref relation inverse way'
+		);
+
+		$authorB->friends[] = $author_id[2];
+		$authorB->save();
+		$authorB = new AuthorModel();
+		$authorB->load(array($author_pk.' = ?',$author_id[1]));
+		$ids = $authorB->friends->getAll('_id');
+		$test->expect(
+			$authorB->friends && count($authorB->friends) == 2 &&
+			in_array($author_id[0],$ids) && in_array($author_id[2],$ids),
+			$type.': self-ref relation collection merging'
+		);
+
 		///////////////////////////////////
 		return $test->results();
 	}
