@@ -1280,10 +1280,12 @@ class Cortex extends Cursor {
 			$type = $this->fieldConf[$key]['type'];
 			$date = ($this->dbsType=='sql' && preg_match('/mssql|sybase|dblib|odbc|sqlsrv/',
 				$this->db->driver())) ? 'Ymd' : 'Y-m-d';
-			if ($type == Schema::DT_DATETIME || Schema::DT_TIMESTAMP)
+			if ($type == Schema::DT_DATETIME || $type == Schema::DT_TIMESTAMP)
 				$this->set($key,date($date.' H:i:s'));
 			elseif ($type == Schema::DT_DATE)
 				$this->set($key,date($date));
+			elseif ($type == Schema::DT_INT4)
+				$this->set($key,time());
 		}
 	}
 
