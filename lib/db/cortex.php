@@ -704,7 +704,7 @@ class Cortex extends Cursor {
 						$filter[0] .= ' and ';
 					$cond = array_shift($addToFilter);
 					if ($this->dbsType=='sql')
-						$cond = $this->_sql_prependTableToFields($cond,$this->table);
+						$cond = $this->queryParser->sql_prependTableToFields($cond,$this->table);
 					$filter[0] .= '('.$cond.')';
 					$filter = array_merge($filter, $addToFilter);
 				}
@@ -970,11 +970,11 @@ class Cortex extends Cursor {
 	protected function _sql_mergeRelCondition($cond, $table, &$filter, &$options, $glue='AND') {
 		if (!empty($cond[0])) {
 			$whereClause = '('.array_shift($cond[0]).')';
-			$whereClause = $this->_sql_prependTableToFields($whereClause,$table);
+			$whereClause = $this->queryParser->sql_prependTableToFields($whereClause,$table);
 			if (!$filter)
 				$filter = array($whereClause);
 			elseif (!empty($filter[0]))
-				$filter[0] = '('.$this->_sql_prependTableToFields($filter[0],$this->table)
+				$filter[0] = '('.$this->queryParser->sql_prependTableToFields($filter[0],$this->table)
 					.') '.$glue.' '.$whereClause;
 			$filter = array_merge($filter, $cond[0]);
 		}
@@ -982,24 +982,6 @@ class Cortex extends Cursor {
 			$hasGroup = preg_replace('/(\w+)/i', $table.'.$1', $cond[1]['group']);
 			$options['group'] .= ','.$hasGroup;
 		}
-	}
-
-	/**
-	 * add table prefix to identifiers which do not have a table prefix yet
-	 * @param string $cond
-	 * @param string $table
-	 * @return string
-	 */
-	protected function _sql_prependTableToFields($cond, $table) {
-		 return preg_replace_callback('/(\w+\((?:[^)(]+|(?R))*\))|'.
-			'(?:(\s)|^|(?<=[(]))([a-zA-Z_](?:[\w\-_]+))(?=[\s<>=!)]|$)/i',
-			function($match) use($table) {
-				if (!isset($match[3]))
-					return $match[1];
-				if (preg_match('/\b(AND|OR|IN|LIKE|NOT)\b/i',$match[3]))
-					return $match[0];
-				return $match[2].$table.'.'.$match[3];
-			}, $cond);
 	}
 
 	/**
@@ -1189,9 +1171,6 @@ class Cortex extends Cursor {
 	/**
 	 * add a virtual field that counts occurring relations
 	 * @param $key
-	 * @param string $alias
-	 * @param array $filter
-	 * @param array $option
 	 */
 	public function countRel($key, $alias=null, $filter=null, $option=null) {
 		if (!$alias)
@@ -1254,7 +1233,7 @@ class Cortex extends Cursor {
 						$rKey=$relConf[1];
 						$crit = $fAlias.'.'.$rKey.' = '.$this->table.'.'.$relConf['relField'];
 						$filter = $this->mergeWithRelFilter($key,array($crit));
-						$filter[0] = $this->_sql_prependTableToFields($filter[0],$fAlias);
+						$filter[0] = $this->queryParser->sql_prependTableToFields($filter[0],$fAlias);
 						$filter = $this->queryParser->prepareFilter($filter,
 							$this->dbsType, $this->db, $this->fieldConf);
 						$crit = array_shift($filter);
@@ -2275,24 +2254,44 @@ class CortexQueryParser extends \Prefab {
 	 * quote identifiers in condition
 	 * @param string $cond
 	 * @param object $db
-	 * @param string|bool $table
 	 * @return string
 	 */
-	public function sql_quoteCondition($cond, $db, $table=false) {
+	public function sql_quoteCondition($cond, $db) {
 		// https://www.debuggex.com/r/6AXwJ1Y3Aac8aocQ/3
 		// https://regex101.com/r/yM5vK4/1
 		// this took me lots of sleepless nights
 		return preg_replace_callback('/'.
 			'(\w+\((?:[^)(]+|(?R))*\))|'. // exclude SQL function names "foo("
 			'(?:(\b(?<!:)'. // exclude bind parameter ":foo"
-			'[a-zA-Z_](?:[\w\-_.]+\.?))'. // match only identifier, exclude values
+				'[a-zA-Z_](?:[\w\-_.]+\.?))'. // match only identifier, exclude values
 			'(?=[\s<>=!)]|$))/i', // only when part of condition or within brackets
-			function($match) use($table,$db) {
+			function($match) use($db) {
 				if (!isset($match[2]))
 					return $match[1];
 				if (preg_match('/\b(AND|OR|IN|LIKE|NOT)\b/i',$match[2]))
 					return $match[2];
-				return $db->quotekey(($table?$table.'.':'').$match[2]);
+				return $db->quotekey($match[2]);
+			}, $cond);
+	}
+
+	/**
+	 * add table prefix to identifiers which do not have a table prefix yet
+	 * @param string $cond
+	 * @param string $table
+	 * @return string
+	 */
+	public function sql_prependTableToFields($cond, $table) {
+		return preg_replace_callback('/'.
+			'(\w+\((?:[^)(]+|(?R))*\))|'.
+			'(?:(\s)|^|(?<=[(]))'.
+			'([a-zA-Z_](?:[\w\-_]+))'.
+			'(?=[\s<>=!)]|$)/i',
+			function($match) use($table) {
+				if (!isset($match[3]))
+					return $match[1];
+				if (preg_match('/\b(AND|OR|IN|LIKE|NOT)\b/i',$match[3]))
+					return $match[0];
+				return $match[2].$table.'.'.$match[3];
 			}, $cond);
 	}
 
