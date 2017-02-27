@@ -1171,7 +1171,7 @@ class Cortex extends Cursor {
 	 * @param int $ttl
 	 * @return mixed
 	 */
-	public function count($filter=NULL,array $options=NULL, $ttl=60) {
+	public function count($filter=NULL, array $options=NULL, $ttl=60) {
 		$has=$this->hasCond;
 		$count=$this->filteredFind($filter,$options,$ttl,true);
 		$this->hasCond=$has;
@@ -1189,19 +1189,29 @@ class Cortex extends Cursor {
 	/**
 	 * add a virtual field that counts occurring relations
 	 * @param $key
+	 * @param string $alias
+	 * @param array $filter
+	 * @param array $option
 	 */
-	public function countRel($key) {
+	public function countRel($key, $alias=null, $filter=null, $option=null) {
+		if (!$alias)
+			$alias = 'count_'.$key;
+		$filter_bak = null;
+		if ($filter || $option) {
+			$filter_bak = isset($this->relFilter[$key]) ? $this->relFilter[$key] : false;
+			$this->filter($key,$filter,$option);
+		}
 		if (isset($this->fieldConf[$key])){
 			// one-to-one, one-to-many
 			if ($this->fieldConf[$key]['relType'] == 'belongs-to-one') {
 				if ($this->dbsType == 'sql') {
-					$this->mapper->set('count_'.$key,'count('.$key.')');
+					$this->mapper->set($alias,'count('.$key.')');
 					$this->grp_stack=(!$this->grp_stack)?$key:$this->grp_stack.','.$key;
 				} elseif ($this->dbsType == 'mongo')
 					$this->_mongo_addGroup(array(
 						'keys'=>array($key=>1),
-						'reduce' => 'prev.count_'.$key.'++;',
-						"initial" => array("count_".$key => 0)
+						'reduce' => 'prev.'.$alias.'++;',
+						"initial" => array($alias => 0)
 					));
 				else
 					trigger_error('Cannot add direct relational counter.',E_USER_ERROR);
@@ -1217,15 +1227,19 @@ class Cortex extends Cursor {
 						if (array_key_exists($key, $this->relFilter) &&
 							!empty($this->relFilter[$key][0])) {
 							$options=array();
-							$from = $mmTable.' '.$this->_sql_left_join($key,$mmTable,$relConf['relPK'],$relConf['relTable']);
+							$from = $mmTable.' '.$this->_sql_left_join($key,$mmTable,
+									$relConf['relPK'],$relConf['relTable']);
 							$relFilter = $this->relFilter[$key];
-							$this->_sql_mergeRelCondition($relFilter,$relConf['relTable'],$filter,$options);
+							$this->_sql_mergeRelCondition($relFilter,$relConf['relTable'],
+								$filter,$options);
 						}
-						$filter = $this->queryParser->prepareFilter($filter, $this->dbsType, $this->db, $this->fieldConf);
+						$filter = $this->queryParser->prepareFilter($filter,
+							$this->dbsType, $this->db, $this->fieldConf);
 						$crit = array_shift($filter);
 						if (count($filter)>0)
 							$this->preBinds+=$filter;
-						$this->mapper->set('count_'.$key,'(select count('.$mmTable.'.'.$relConf['relField'].') from '.$from.
+						$this->mapper->set($alias,
+							'(select count('.$mmTable.'.'.$relConf['relField'].') from '.$from.
 							' where '.$crit.' group by '.$mmTable.'.'.$relConf['relField'].')');
 					} else {
 						// count rel
@@ -1240,11 +1254,13 @@ class Cortex extends Cursor {
 						$rKey=$relConf[1];
 						$crit = $fAlias.'.'.$rKey.' = '.$this->table.'.'.$relConf['relField'];
 						$filter = $this->mergeWithRelFilter($key,array($crit));
-						$filter = $this->queryParser->prepareFilter($filter, $this->dbsType, $this->db, $this->fieldConf);
+						$filter[0] = $this->_sql_prependTableToFields($filter[0],$fAlias);
+						$filter = $this->queryParser->prepareFilter($filter,
+							$this->dbsType, $this->db, $this->fieldConf);
 						$crit = array_shift($filter);
 						if (count($filter)>0)
 							$this->preBinds+=$filter;
-						$this->mapper->set('count_'.$key,
+						$this->mapper->set($alias,
 							'(select count('.$fAlias.'.'.$fConf['primary'].') from '.
 							$fTable.' AS '.$fAlias.' where '.
 							$crit.' group by '.$fAlias.'.'.$rKey.')');
@@ -1254,6 +1270,12 @@ class Cortex extends Cursor {
 					}
 				}
 			}
+		}
+		if ($filter_bak!==null) {
+			if ($filter_bak)
+				$this->relFilter[$key] = $filter_bak;
+			else
+				$this->clearFilter($key);
 		}
 	}
 
