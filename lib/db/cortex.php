@@ -517,8 +517,8 @@ class Cortex extends Cursor {
 				// has-many <> belongs-to-one (m:1)
 				$field['has-many']['hasRel'] = 'belongs-to-one';
 				$toConf=$rel['fieldConf'][$relConf[1]]['belongs-to-one'];
-				if (is_array($toConf))
-					$field['has-many']['relField'] = $toConf[1];
+				$field['has-many']['relField'] = is_array($toConf) ?
+					$toConf[1] : $rel['primary'];
 			}
 		} elseif(array_key_exists('has-one', $field))
 			$field['relType'] = 'has-one';
@@ -1235,15 +1235,18 @@ class Cortex extends Cursor {
 					if ($this->dbsType == 'sql') {
 						$fConf=$relConf[0]::resolveConfiguration();
 						$fTable=$fConf['table'];
+						$fAlias=$fTable.'__count';
 						$rKey=$relConf[1];
-						$crit = $fTable.'.'.$rKey.' = '.$this->table.'.'.$this->primary;
+						$crit = $fAlias.'.'.$rKey.' = '.$this->table.'.'.$relConf['relField'];
 						$filter = $this->mergeWithRelFilter($key,array($crit));
 						$filter = $this->queryParser->prepareFilter($filter, $this->dbsType, $this->db, $this->fieldConf);
 						$crit = array_shift($filter);
 						if (count($filter)>0)
 							$this->preBinds+=$filter;
-						$this->mapper->set('count_'.$key,'(select count('.$fTable.'.'.$fConf['primary'].') from '.$fTable.' where '.
-									$crit.' group by '.$fTable.'.'.$rKey.')');
+						$this->mapper->set('count_'.$key,
+							'(select count('.$fAlias.'.'.$fConf['primary'].') from '.
+							$fTable.' AS '.$fAlias.' where '.
+							$crit.' group by '.$fAlias.'.'.$rKey.')');
 					} else {
 						// count rel
 						$this->countFields[]=$key;
