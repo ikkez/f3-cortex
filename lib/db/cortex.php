@@ -18,7 +18,7 @@
  *  https://github.com/ikkez/F3-Sugar/
  *
  *  @package DB
- *  @version 1.4.2
+ *  @version 1.5.0-dev
  *  @date 27.02.2017
  *  @since 24.04.2012
  */
@@ -599,7 +599,7 @@ class Cortex extends Cursor {
 	 * @param array $options
 	 * @param int $ttl
 	 * @param bool $count
-	 * @return array|false array of underlying cursor objects
+	 * @return array|int|false array of underlying cursor objects
 	 */
 	protected function filteredFind($filter = NULL, array $options = NULL, $ttl = 0, $count=false) {
 		if ($this->grp_stack) {
@@ -792,7 +792,7 @@ class Cortex extends Cursor {
 			}
 		}
 		return ($count)
-			? $this->mapper->count($filter,$ttl)
+			? $this->mapper->count($filter,$options,$ttl)
 			: $this->mapper->find($filter,$this->queryParser->prepareOptions($options,$this->dbsType),$ttl);
 	}
 
@@ -1167,12 +1167,13 @@ class Cortex extends Cursor {
 	/**
 	 * Count records that match criteria
 	 * @param null $filter
+	 * @param array $options
 	 * @param int $ttl
 	 * @return mixed
 	 */
-	public function count($filter = NULL, $ttl = 60) {
+	public function count($filter=NULL,array $options=NULL, $ttl=60) {
 		$has=$this->hasCond;
-		$count=$this->filteredFind($filter,null,$ttl,true);
+		$count=$this->filteredFind($filter,$options,$ttl,true);
 		$this->hasCond=$has;
 		return $count;
 	}
