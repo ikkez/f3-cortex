@@ -1,7 +1,7 @@
 <?php
 
 /**
- *  Cortex - a general purpose mapper for the PHP Fat-Free Framework
+ *  Cortex - the flexible data mapper for the PHP Fat-Free Framework
  *
  *  The contents of this file are subject to the terms of the GNU General
  *  Public License Version 3.0. You may not use this file except in
@@ -13,13 +13,13 @@
  *              |  |    < |    <|  -__|-- __|
  *              |__|__|__||__|__|_____|_____|
  *
- *  Copyright (c) 2016 by ikkez
+ *  Copyright (c) 2017 by ikkez
  *  Christian Knuth <mail@ikkez.de>
  *  https://github.com/ikkez/F3-Sugar/
  *
  *  @package DB
- *  @version 1.4.2-dev
- *  @date 29.01.2016
+ *  @version 1.4.2
+ *  @date 27.02.2017
  *  @since 24.04.2012
  */
 
@@ -61,8 +61,8 @@ class Cortex extends Cursor {
 	/** @var CortexQueryParser */
 	protected $queryParser;
 
-	static
-		$init = false;  // just init without mapper
+	/** @var bool initialization flag */
+	static $init = false;
 
 	const
 		// special datatypes
