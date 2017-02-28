@@ -338,6 +338,18 @@ class Test_Syntax {
 			$type.': enhanced IN, NOT IN operator'
 		);
 
+		$result = $cx->find(array('num1 = ?',NULL));
+		$test->expect(
+			count($result) == 1 && $result[0]->title == 'bar1',
+			$type.': check NULL'
+		);
+
+		$result = $cx->find(array('num2 != ?',NULL));
+		$test->expect(
+			count($result) == 3,
+			$type.': check NOT NULL'
+		);
+
 		///////////////////////////////////
 		return $test->results();
 	}
