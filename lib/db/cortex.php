@@ -2058,6 +2058,18 @@ class Cortex extends Cursor {
 	}
 
 	/**
+	 * return TRUE if any/specified field value has changed
+	 * @param string $key
+	 * @return mixed
+	 */
+	public function changed($key=null) {
+		if (method_exists($this->mapper,'changed'))
+			return $this->mapper->changed($key);
+		else
+			trigger_error('method does not exist on mapper',E_USER_ERROR);
+	}
+
+	/**
 	 * clear any mapper field or relation
 	 * @param string $key
 	 * @return NULL|void
