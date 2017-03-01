@@ -163,23 +163,32 @@ class Cortex extends Cursor {
 	 * @return array
 	 */
 	public function fields(array $fields=array(), $exclude=false) {
+		$addInc=[];
 		if ($fields)
-			// collect restricted fields for related mappers
+			// collect & set restricted fields for related mappers
 			foreach($fields as $i=>$val)
 				if(is_int(strpos($val,'.'))) {
 					list($key, $relField) = explode('.',$val,2);
 					$this->relWhitelist[$key][(int)$exclude][] = $relField;
 					unset($fields[$i]);
-					$fields[] = $key;
+					$addInc[] = $key;
 				}
 		$fields = array_unique($fields);
 		$schema = $this->whitelist ?: $this->mapper->fields();
-		if (!$schema && !$this->dbsType != 'sql' && $this->dry()) {
+		if (!$schema && $this->dbsType != 'sql' && $this->dry()) {
 			$schema = $this->load()->mapper->fields();
 			$this->reset();
 		}
+		// include relation linkage fields to $fields (if $fields is a whitelist)
+		if (!$exclude && !empty($fields) && !empty($addInc))
+			$fields=array_unique(array_merge($fields,$addInc));
+		// include relation linkage fields to existing whitelist (if $fields is a blacklist or there's nothing else to whitelist)
+		elseif (!empty($addInc) && $this->whitelist)
+			$this->whitelist=array_unique(array_merge($this->whitelist,$addInc));
+		// initially merge configured fields into schema (add virtual/rel fields to schema)
 		if (!$this->whitelist && $this->fieldConf)
 			$schema=array_unique(array_merge($schema,array_keys($this->fieldConf)));
+		// skip if there's nothing to set for own model
 		if (!$fields || empty($fields))
 			return $schema;
 		elseif ($exclude) {
@@ -187,9 +196,18 @@ class Cortex extends Cursor {
 		} else
 			$this->whitelist=$fields;
 		$id=$this->dbsType=='sql'?$this->primary:'_id';
-		if(!in_array($id,$this->whitelist))
+		if (!in_array($id,$this->whitelist))
 			$this->whitelist[]=$id;
-		$this->initMapper();
+		if ($this->dbsType == 'sql') {
+			// inject new field schema
+			$refl = new \ReflectionObject($this->mapper);
+			$prop = $refl->getProperty('fields');
+			$prop->setAccessible(true);
+			$prop->setValue($this->mapper, $this->db->schema($this->table,
+				$this->whitelist, ($this->fluid) ? 0 : $this->ttl));
+			$prop->setAccessible(false);
+			$this->reset();
+		}
 		return $this->whitelist;
 	}
 
@@ -1186,6 +1204,8 @@ class Cortex extends Cursor {
 				if ($this->dbsType == 'sql') {
 					$this->mapper->set($alias,'count('.$key.')');
 					$this->grp_stack=(!$this->grp_stack)?$key:$this->grp_stack.','.$key;
+					if ($this->whitelist && !in_array($alias,$this->whitelist))
+						$this->whitelist[] = $alias;
 				} elseif ($this->dbsType == 'mongo')
 					$this->_mongo_addGroup(array(
 						'keys'=>array($key=>1),
@@ -1220,6 +1240,8 @@ class Cortex extends Cursor {
 						$this->mapper->set($alias,
 							'(select count('.$mmTable.'.'.$relConf['relField'].') from '.$from.
 							' where '.$crit.' group by '.$mmTable.'.'.$relConf['relField'].')');
+						if ($this->whitelist && !in_array($alias,$this->whitelist))
+							$this->whitelist[] = $alias;
 					} else {
 						// count rel
 						$this->countFields[]=$key;
@@ -1243,6 +1265,8 @@ class Cortex extends Cursor {
 							'(select count('.$fAlias.'.'.$fConf['primary'].') from '.
 							$fTable.' AS '.$fAlias.' where '.
 							$crit.' group by '.$fAlias.'.'.$rKey.')');
+						if ($this->whitelist && !in_array($alias,$this->whitelist))
+							$this->whitelist[] = $alias;
 					} else {
 						// count rel
 						$this->countFields[]=$key;
