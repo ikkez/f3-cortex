@@ -64,6 +64,9 @@ class Cortex extends Cursor {
 	/** @var bool initialization flag */
 	static $init = false;
 
+	/** @var array sql table schema cache */
+	static $schema_cache = [];
+
 	const
 		// special datatypes
 		DT_SERIALIZED = 'SERIALIZED',
@@ -132,8 +135,10 @@ class Cortex extends Cursor {
 				$this->mapper = new Jig\Mapper($this->db, $this->table);
 				break;
 			case 'sql':
-				$this->mapper = new SQL\Mapper($this->db, $this->table, $this->whitelist,
+				// ensure to load full table schema, so we can work with it at runtime
+				$this->mapper = new SQL\Mapper($this->db, $this->table, null,
 					($this->fluid)?0:$this->ttl);
+				$this->applyWhitelist();
 				break;
 			case 'mongo':
 				$this->mapper = new Mongo\Mapper($this->db, $this->table);
@@ -198,17 +203,28 @@ class Cortex extends Cursor {
 		$id=$this->dbsType=='sql'?$this->primary:'_id';
 		if (!in_array($id,$this->whitelist))
 			$this->whitelist[]=$id;
-		if ($this->dbsType == 'sql') {
-			// inject new field schema
-			$refl = new \ReflectionObject($this->mapper);
-			$prop = $refl->getProperty('fields');
-			$prop->setAccessible(true);
-			$prop->setValue($this->mapper, $this->db->schema($this->table,
-				$this->whitelist, ($this->fluid) ? 0 : $this->ttl));
-			$prop->setAccessible(false);
-			$this->reset();
-		}
+		$this->applyWhitelist();
 		return $this->whitelist;
+	}
+
+	/**
+	 * apply whitelist to active mapper schema
+	 */
+	protected function applyWhitelist() {
+		if ($this->dbsType == 'sql') {
+			// fetch full schema
+			if (!$this->fluid && isset(self::$schema_cache[$this->table]))
+				$schema = self::$schema_cache[$this->table];
+			else {
+				$schema = $this->mapper->schema();
+				self::$schema_cache[$this->table] = $schema;
+			}
+			// apply reduced fields schema
+			if ($this->whitelist)
+				$schema = array_intersect_key($schema, array_flip($this->whitelist));
+			$this->mapper->schema($schema);
+			$this->mapper->reset();
+		}
 	}
 
 	/**
@@ -1434,12 +1450,9 @@ class Cortex extends Cursor {
 				// update mapper fields
 				$newField = $table->getCols(true);
 				$newField = $newField[$key];
-				$refl = new \ReflectionObject($this->mapper);
-				$prop = $refl->getProperty('fields');
-				$prop->setAccessible(true);
-				$fields = $prop->getValue($this->mapper);
+				$fields = $this->mapper->schema();
 				$fields[$key] = $newField + array('value'=>NULL,'initial'=>NULL,'changed'=>NULL);
-				$prop->setValue($this->mapper,$fields);
+				$this->mapper->schema($fields);
 			}
 		}
 		// custom setter
@@ -1894,7 +1907,7 @@ class Cortex extends Cursor {
 			$rel_depths['*'] = isset($rel_depths['*'])?--$rel_depths['*']:-1;
 		if (!empty($this->fieldConf)) {
 			$fields += array_fill_keys(array_keys($this->fieldConf),NULL);
-			if($this->whitelist)
+			if ($this->whitelist)
 				$fields = array_intersect_key($fields, array_flip($this->whitelist));
 			$mp = $obj ? : $this;
 			foreach ($fields as $key => &$val) {
