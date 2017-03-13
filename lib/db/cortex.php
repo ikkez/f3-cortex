@@ -1252,7 +1252,7 @@ class Cortex extends Cursor {
 							$this->dbsType, $this->db, $this->fieldConf);
 						$crit = array_shift($filter);
 						if (count($filter)>0)
-							$this->preBinds+=$filter;
+							$this->preBinds=array_merge($this->preBinds,$filter);
 						$this->mapper->set($alias,
 							'(select count('.$mmTable.'.'.$relConf['relField'].') from '.$from.
 							' where '.$crit.' group by '.$mmTable.'.'.$relConf['relField'].')');
@@ -1276,7 +1276,7 @@ class Cortex extends Cursor {
 							$this->dbsType, $this->db, $this->fieldConf);
 						$crit = array_shift($filter);
 						if (count($filter)>0)
-							$this->preBinds+=$filter;
+							$this->preBinds=array_merge($this->preBinds,$filter);
 						$this->mapper->set($alias,
 							'(select count('.$fAlias.'.'.$fConf['primary'].') from '.
 							$fTable.' AS '.$fAlias.' where '.
