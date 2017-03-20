@@ -2234,25 +2234,21 @@ class CortexQueryParser extends \Prefab {
 					// enhanced IN handling
 					if (is_int(strpos($part, '?'))) {
 						$val = array_shift($args);
-						if (is_int($pos = strpos($part, 'IN ?'))) {
+						if (is_int($pos = strpos($part, ' IN ?'))) {
 							if (!is_array($val) || empty($val))
 								trigger_error(self::E_INBINDVALUE,E_USER_ERROR);
 							$bindMarks = str_repeat('?,', count($val) - 1).'?';
-							$part = substr($part, 0, $pos).'IN ('.$bindMarks.')';
+							$part = substr($part, 0, $pos).' IN ('.$bindMarks.')';
 							$ncond = array_merge($ncond, $val);
 						} elseif($val === null &&
 							preg_match('/(\S[\w\-]+\S)\s*(!?==?)\s*(?:\?|:\w+)/i',$part,$match)) {
-							$part = $match[1].' IS '.($match[2][0]=='!'?'NOT ':'').'NULL';
+							$part = ' '.$match[1].' IS '.($match[2][0]=='!'?'NOT ':'').'NULL ';
 						} else
 							$ncond[] = $val;
 					}
 					unset($part);
 				}
 				array_unshift($ncond, implode($parts));
-//				array_unshift($ncond, array_reduce($parts,function($out,$part){
-//					return $out.((!$out||in_array($part,array('(',')'))
-//						||preg_match('/\($/',$out))?'':' ').$part;
-//				},''));
 				break;
 			default:
 				trigger_error(self::E_ENGINEERROR,E_USER_ERROR);
