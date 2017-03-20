@@ -18,7 +18,7 @@
  *  https://github.com/ikkez/F3-Sugar/
  *
  *  @package DB
- *  @version 1.4.2
+ *  @version 1.4.3
  *  @date 27.02.2017
  *  @since 24.04.2012
  */
@@ -2183,15 +2183,15 @@ class CortexQueryParser extends \Prefab {
 					// enhanced IN handling
 					if (is_int(strpos($part, '?'))) {
 						$val = array_shift($args);
-						if (is_int($pos = strpos($part, 'IN ?'))) {
+						if (is_int($pos = strpos($part, ' IN ?'))) {
 							if (!is_array($val) || empty($val))
 								trigger_error(self::E_INBINDVALUE,E_USER_ERROR);
 							$bindMarks = str_repeat('?,', count($val) - 1).'?';
-							$part = substr($part, 0, $pos).'IN ('.$bindMarks.')';
+							$part = substr($part, 0, $pos).' IN ('.$bindMarks.')';
 							$ncond = array_merge($ncond, $val);
 						} elseif($val === null &&
 							preg_match('/(\S[\w\-]+\S)\s*(!?==?)\s*(?:\?|:\w+)/i',$part,$match)) {
-							$part = $match[1].' IS '.($match[2][0]=='!'?'NOT ':'').'NULL';
+							$part = ' '.$match[1].' IS '.($match[2][0]=='!'?'NOT ':'').'NULL ';
 						} else
 							$ncond[] = $val;
 					}
