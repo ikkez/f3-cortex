@@ -478,7 +478,8 @@ class Cortex extends Cursor {
 		$mmTable = array($ftable.'__'.$fkey, $ptable.'__'.$pkey);
 		natcasesort($mmTable);
 		// shortcut for self-referencing mm tables
-		if ($mmTable[0] == $mmTable[1] || ($fConf && $fConf['isSelf']==true))
+		if ($mmTable[0] == $mmTable[1] ||
+			($fConf && isset($fConf['isSelf']) && $fConf['isSelf']==true))
 			return array_shift($mmTable);
 		$return = strtolower(str_replace('\\', '_', implode('_mm_', $mmTable)));
 		return $return;
