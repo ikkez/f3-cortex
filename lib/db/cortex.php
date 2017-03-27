@@ -2239,7 +2239,7 @@ class CortexQueryParser extends \Prefab {
 							if (!is_array($val) || empty($val))
 								trigger_error(self::E_INBINDVALUE,E_USER_ERROR);
 							$bindMarks = str_repeat('?,', count($val) - 1).'?';
-							$part = substr($part, 0, $pos).' IN ('.$bindMarks.')';
+							$part = substr($part, 0, $pos).' IN ('.$bindMarks.') ';
 							$ncond = array_merge($ncond, $val);
 						} elseif($val === null &&
 							preg_match('/(\S[\w\-]+\S)\s*(!?==?)\s*(?:\?|:\w+)/i',$part,$match)) {
