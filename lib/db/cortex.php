@@ -1268,7 +1268,7 @@ class Cortex extends Cursor {
 					if ($this->dbsType == 'sql') {
 						$fConf=$relConf[0]::resolveConfiguration();
 						$fTable=$fConf['table'];
-						$fAlias=$fTable.'__count';
+						$fAlias='`'.$fTable.'__count`';
 						$rKey=$relConf[1];
 						$crit = $fAlias.'.'.$rKey.' = '.$this->table.'.'.$relConf['relField'];
 						$filter = $this->mergeWithRelFilter($key,array($crit));
@@ -1279,9 +1279,9 @@ class Cortex extends Cursor {
 						if (count($filter)>0)
 							$this->preBinds=array_merge($this->preBinds,$filter);
 						$this->mapper->set($alias,
-							'(select count('.$fAlias.'.'.$fConf['primary'].') from '.
-							$fTable.' AS '.$fAlias.' where '.
-							$crit.' group by '.$fAlias.'.'.$rKey.')');
+							'(select count('.$fAlias.'.`'.$fConf['primary'].'`) from `'.
+							$fTable.'` AS '.$fAlias.' where '.
+							$crit.' group by '.$fAlias.'.`'.$rKey.'`)');
 						if ($this->whitelist && !in_array($alias,$this->whitelist))
 							$this->whitelist[] = $alias;
 					} else {
