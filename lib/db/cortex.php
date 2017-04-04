@@ -765,18 +765,26 @@ class Cortex extends Cursor {
 					}
 					if (!empty($m_refl_adhoc))
 						foreach ($m_refl_adhoc as $key=>$val)
-							$adhoc.=', '.$val['expr'].' AS '.$key;
+							$adhoc.=', '.$val['expr'].' AS '.$this->db->quotekey($key);
 					$sql = 'SELECT '.$qtable.'.*'.$adhoc.' FROM '.$qtable;
 				}
 				$sql .= ' '.implode(' ',$hasJoin).' WHERE '.$filter[0];
 				if (!$count) {
 					$db=$this->db;
 					if (isset($options['group']))
-						$sql.=' GROUP BY '.preg_replace_callback('/\w+[._\-\w]*/i', function($match) use($db) {
+						$sql.=' GROUP BY '.preg_replace_callback('/\w+[._\-\w]*/i',
+							function($match) use($db) {
 								return $db->quotekey($match[0]);
 							}, $options['group']);
 					if (isset($options['order']))
-						$sql .= ' ORDER BY '.$options['order'];
+						$sql.=' ORDER BY '.implode(',',array_map(
+							function($str) use($db) {
+								return preg_match('/^\h*(\w+[._\-\w]*)(?:\h+((?:ASC|DESC)[\w\h]*))?\h*$/i',
+									$str,$parts)?
+									($db->quotekey($parts[1]).
+										(isset($parts[2])?(' '.$parts[2]):'')):$str;
+							},
+							explode(',',$options['order'])));
 					if (preg_match('/mssql|sqlsrv|odbc/', $this->db->driver()) &&
 						(isset($options['limit']) || isset($options['offset']))) {
 						$ofs=isset($options['offset'])?(int)$options['offset']:0;
@@ -1219,7 +1227,7 @@ class Cortex extends Cursor {
 			// one-to-one, one-to-many
 			if ($this->fieldConf[$key]['relType'] == 'belongs-to-one') {
 				if ($this->dbsType == 'sql') {
-					$this->mapper->set($alias,'count('.$key.')');
+					$this->mapper->set($alias,'count('.$this->db->quotekey($key).')');
 					$this->grp_stack=(!$this->grp_stack)?$key:$this->grp_stack.','.$key;
 					if ($this->whitelist && !in_array($alias,$this->whitelist))
 						$this->whitelist[] = $alias;
@@ -1255,8 +1263,9 @@ class Cortex extends Cursor {
 						if (count($filter)>0)
 							$this->preBinds=array_merge($this->preBinds,$filter);
 						$this->mapper->set($alias,
-							'(select count('.$mmTable.'.'.$relConf['relField'].') from '.$from.
-							' where '.$crit.' group by '.$mmTable.'.'.$relConf['relField'].')');
+							'(select count('.$this->db->quotekey($mmTable.'.'.$relConf['relField']).') from '.
+                            $this->db->quotekey($from).' where '.$crit.
+                            ' group by '.$this->db->quotekey($mmTable.'.'.$relConf['relField']).')');
 						if ($this->whitelist && !in_array($alias,$this->whitelist))
 							$this->whitelist[] = $alias;
 					} else {
@@ -1279,9 +1288,9 @@ class Cortex extends Cursor {
 						if (count($filter)>0)
 							$this->preBinds=array_merge($this->preBinds,$filter);
 						$this->mapper->set($alias,
-							'(select count('.$fAlias.'.'.$fConf['primary'].') from '.
-							$fTable.' AS '.$fAlias.' where '.
-							$crit.' group by '.$fAlias.'.'.$rKey.')');
+							'(select count('.$this->db->quotekey($fAlias.'.'.$fConf['primary']).') from '.
+                            $this->db->quotekey($fTable).' AS '.$this->db->quotekey($fAlias).' where '.
+							$crit.' group by '.$this->db->quotekey($fAlias.'.'.$rKey).')');
 						if ($this->whitelist && !in_array($alias,$this->whitelist))
 							$this->whitelist[] = $alias;
 					} else {
@@ -2238,7 +2247,7 @@ class CortexQueryParser extends \Prefab {
 						if (is_int($pos = strpos($part, ' IN ?'))) {
 							if (!is_array($val) || empty($val))
 								trigger_error(self::E_INBINDVALUE,E_USER_ERROR);
-							$bindMarks = str_repeat('?,', count($val) - 1).'?';
+							$bindMarks = str_repeat('?,',count($val) - 1).'?';
 							$part = substr($part, 0, $pos).' IN ('.$bindMarks.') ';
 							$ncond = array_merge($ncond, $val);
 						} elseif($val === null &&
