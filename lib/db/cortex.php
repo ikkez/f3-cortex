@@ -326,51 +326,50 @@ class Cortex extends Cursor {
 		if ($db instanceof SQL) {
 			$schema = new Schema($db);
 			// prepare field configuration
-			if (!empty($fields))
-				foreach($fields as $key => &$field) {
-					// fetch relation field types
-					$field = static::resolveRelationConf($field);
-					// check m:m relation
-					if (array_key_exists('has-many', $field)) {
-						// m:m relation conf [class,to-key,from-key]
-						if (is_array($relConf = $field['has-many'])) {
-							$rel = $relConf[0]::resolveConfiguration();
-							// check if foreign conf matches m:m
-							if (array_key_exists($relConf[1],$rel['fieldConf'])
-								&& !is_null($rel['fieldConf'][$relConf[1]])
-								&& $relConf['hasRel'] == 'has-many') {
-								// compute mm table name
-								$mmTable = isset($relConf[2]) ? $relConf[2] :
-									static::getMMTableName($rel['table'], $relConf['relField'],
-										$table, $key, $rel['fieldConf'][$relConf[1]]['has-many']);
-								if (!in_array($mmTable,$schema->getTables())) {
-									$mmt = $schema->createTable($mmTable);
-									$relField = $relConf['relField'].($relConf['isSelf']?'_ref':'');
-									$mmt->addColumn($relField)->type($relConf['relFieldType']);
-									$mmt->addColumn($key)->type($field['type']);
-									$index = array($relField,$key);
-									sort($index);
-									$mmt->addIndex($index);
-									$mmt->build();
-								}
+			foreach($fields as $key => &$field) {
+				// fetch relation field types
+				$field = static::resolveRelationConf($field);
+				// check m:m relation
+				if (array_key_exists('has-many', $field)) {
+					// m:m relation conf [class,to-key,from-key]
+					if (is_array($relConf = $field['has-many'])) {
+						$rel = $relConf[0]::resolveConfiguration();
+						// check if foreign conf matches m:m
+						if (array_key_exists($relConf[1],$rel['fieldConf'])
+							&& !is_null($rel['fieldConf'][$relConf[1]])
+							&& $relConf['hasRel'] == 'has-many') {
+							// compute mm table name
+							$mmTable = isset($relConf[2]) ? $relConf[2] :
+								static::getMMTableName($rel['table'], $relConf['relField'],
+									$table, $key, $rel['fieldConf'][$relConf[1]]['has-many']);
+							if (!in_array($mmTable,$schema->getTables())) {
+								$mmt = $schema->createTable($mmTable);
+								$relField = $relConf['relField'].($relConf['isSelf']?'_ref':'');
+								$mmt->addColumn($relField)->type($relConf['relFieldType']);
+								$mmt->addColumn($key)->type($field['type']);
+								$index = array($relField,$key);
+								sort($index);
+								$mmt->addIndex($index);
+								$mmt->build();
 							}
 						}
-						unset($fields[$key]);
-						continue;
 					}
-					// skip virtual fields with no type
-					if (!array_key_exists('type', $field)) {
-						unset($fields[$key]);
-						continue;
-					}
-					// transform array fields
-					if (in_array($field['type'], array(self::DT_JSON, self::DT_SERIALIZED)))
-						$field['type']=$schema::DT_TEXT;
-					// defaults values
-					if (!array_key_exists('nullable', $field))
-						$field['nullable'] = true;
-					unset($field);
+					unset($fields[$key]);
+					continue;
 				}
+				// skip virtual fields with no type
+				if (!array_key_exists('type', $field)) {
+					unset($fields[$key]);
+					continue;
+				}
+				// transform array fields
+				if (in_array($field['type'], array(self::DT_JSON, self::DT_SERIALIZED)))
+					$field['type']=$schema::DT_TEXT;
+				// defaults values
+				if (!array_key_exists('nullable', $field))
+					$field['nullable'] = true;
+				unset($field);
+			}
 			if (!in_array($table, $schema->getTables())) {
 				// create table
 				$table = $schema->createTable($table);
@@ -583,13 +582,12 @@ class Cortex extends Cursor {
 	public function find($filter = NULL, array $options = NULL, $ttl = 0) {
 		$sort=false;
 		if ($this->dbsType!='sql') {
-			if (!empty($this->countFields))
-				// see if reordering is needed
-				foreach($this->countFields as $counter) {
-					if ($options && isset($options['order']) &&
-						preg_match('/count_'.$counter.'\h+(asc|desc)/i',$options['order'],$match))
-						$sort=true;
-				}
+			// see if reordering is needed
+			foreach($this->countFields?:[] as $counter) {
+				if ($options && isset($options['order']) &&
+					preg_match('/count_'.$counter.'\h+(asc|desc)/i',$options['order'],$match))
+					$sort=true;
+			}
 			if ($sort) {
 				// backup slice settings
 				if (isset($options['limit'])) {
@@ -610,14 +608,13 @@ class Cortex extends Cursor {
 			$record = $this->factory($record);
 			unset($record);
 		}
-		if (!empty($this->countFields))
-			// add counter for NoSQL engines
-			foreach($this->countFields as $counter)
-				foreach($result as &$mapper) {
-					$cr=$mapper->get($counter);
-					$mapper->virtual('count_'.$counter,$cr?count($cr):null);
-					unset($mapper);
-				}
+		// add counter for NoSQL engines
+		foreach($this->countFields?:[] as $counter)
+			foreach($result as &$mapper) {
+				$cr=$mapper->get($counter);
+				$mapper->virtual('count_'.$counter,$cr?count($cr):null);
+				unset($mapper);
+			}
 		$cc = new CortexCollection();
 		$cc->setModels($result);
 		if($sort) {
@@ -752,13 +749,13 @@ class Cortex extends Cursor {
 			if (isset($options['order']) && $this->db->driver() == 'pgsql')
 				// PostgreSQLism: sort NULL values to the end of a table
 				$options['order'] = preg_replace('/\h+DESC/i',' DESC NULLS LAST',$options['order']);
-			if (!empty($hasJoin)) {
+			if ($hasJoin) {
 				// assemble full sql query
 				$adhoc='';
 				if ($count)
 					$sql = 'SELECT COUNT(*) AS '.$this->db->quotekey('rows').' FROM '.$qtable;
 				else {
-					if (!empty($this->preBinds)) {
+					if ($this->preBinds) {
 						$crit = array_shift($filter);
 						$filter = array_merge($this->preBinds,$filter);
 						array_unshift($filter,$crit);
@@ -1264,8 +1261,8 @@ class Cortex extends Cursor {
 							$this->preBinds=array_merge($this->preBinds,$filter);
 						$this->mapper->set($alias,
 							'(select count('.$this->db->quotekey($mmTable.'.'.$relConf['relField']).') from '.
-                            $this->db->quotekey($from).' where '.$crit.
-                            ' group by '.$this->db->quotekey($mmTable.'.'.$relConf['relField']).')');
+							$this->db->quotekey($from).' where '.$crit.
+							' group by '.$this->db->quotekey($mmTable.'.'.$relConf['relField']).')');
 						if ($this->whitelist && !in_array($alias,$this->whitelist))
 							$this->whitelist[] = $alias;
 					} else {
@@ -1289,7 +1286,7 @@ class Cortex extends Cursor {
 							$this->preBinds=array_merge($this->preBinds,$filter);
 						$this->mapper->set($alias,
 							'(select count('.$this->db->quotekey($fAlias.'.'.$fConf['primary']).') from '.
-                            $this->db->quotekey($fTable).' AS '.$this->db->quotekey($fAlias).' where '.
+							$this->db->quotekey($fTable).' AS '.$this->db->quotekey($fAlias).' where '.
 							$crit.' group by '.$this->db->quotekey($fAlias.'.'.$rKey).')');
 						if ($this->whitelist && !in_array($alias,$this->whitelist))
 							$this->whitelist[] = $alias;
@@ -1915,7 +1912,7 @@ class Cortex extends Cursor {
 			$rel_depths = array('*'=>$rel_depths-1);
 		elseif (is_array($rel_depths))
 			$rel_depths['*'] = isset($rel_depths['*'])?--$rel_depths['*']:-1;
-		if (!empty($this->fieldConf)) {
+		if ($this->fieldConf) {
 			$fields += array_fill_keys(array_keys($this->fieldConf),NULL);
 			if ($this->whitelist)
 				$fields = array_intersect_key($fields, array_flip($this->whitelist));
