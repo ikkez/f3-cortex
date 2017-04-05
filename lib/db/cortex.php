@@ -192,7 +192,8 @@ class Cortex extends Cursor {
 			$this->whitelist=array_unique(array_merge($this->whitelist,$addInc));
 		// initially merge configured fields into schema (add virtual/rel fields to schema)
 		if (!$this->whitelist && $this->fieldConf)
-			$schema=array_unique(array_merge($schema,array_keys($this->fieldConf)));
+			$schema=array_unique(array_merge($schema,
+				array_keys($this->fieldConf),array_keys($this->vFields?:[])));
 		// skip if there's nothing to set for own model
 		if (!$fields || empty($fields))
 			return $schema;
@@ -1514,6 +1515,10 @@ class Cortex extends Cursor {
 	 */
 	public function virtual($key, $val) {
 		$this->vFields[$key]=$val;
+		if (!empty($this->whitelist)) {
+			$this->whitelist[] = $key;
+			$this->whitelist = array_unique($this->whitelist);
+		}
 	}
 
 	/**
