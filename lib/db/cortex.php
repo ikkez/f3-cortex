@@ -1795,7 +1795,7 @@ class Cortex extends Cursor {
 		if (is_null($val))
 			return NULL;
 		if (is_object($val) && $val instanceof CortexCollection)
-			$val = $val->expose();
+			$val = $val->getAll($rel_field,true);
 		elseif (is_string($val))
 			// split-able string of collection IDs
 			$val = \Base::instance()->split($val);
@@ -2771,11 +2771,13 @@ class CortexCollection extends \ArrayIterator {
 
 	/**
 	 * compare collection with a given ID stack
-	 * @param array $stack
+	 * @param array|CortexCollection $stack
 	 * @param string $cpm_key
 	 * @return array
 	 */
 	public function compare($stack,$cpm_key='_id') {
+		if ($stack instanceof CortexCollection)
+			$stack = $stack->getAll($cpm_key,true);
 		$keys = $this->getAll($cpm_key,true);
 		$out = [];
 		$new = array_diff($stack,$keys);
