@@ -2769,6 +2769,29 @@ class CortexCollection extends \ArrayIterator {
 			unset($this[$ii]);
 	}
 
+	/**
+	 * compare collection with a given ID stack
+	 * @param array $stack
+	 * @param string $cpm_key
+	 * @return array
+	 */
+	public function compare($stack,$cpm_key='_id') {
+		$keys = $this->getAll($cpm_key,true);
+		$out = [];
+		$new = array_diff($stack,$keys);
+		$old = array_diff($keys,$stack);
+		if ($new)
+			$out['new'] = $new;
+		if ($old)
+			$out['old'] = $old;
+		return $out;
+	}
+
+	/**
+	 * create a new hydrated collection from the given records
+	 * @param $records
+	 * @return CortexCollection
+	 */
 	static public function factory($records) {
 		$cc = new self();
 		$cc->setModels($records);
