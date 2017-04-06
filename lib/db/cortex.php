@@ -973,8 +973,9 @@ class Cortex extends Cursor {
 		$rel = $this->getRelInstance($relModel,null,$key);
 		$fkey = is_array($this->fieldConf[$key]['belongs-to-one']) ?
 			$this->fieldConf[$key]['belongs-to-one'][1] : $rel->primary;
-		$query = $this->_sql_left_join($key,$this->table,$fkey,$table);
-		$this->_sql_mergeRelCondition($cond,$table,$filter,$options);
+		$alias = $table.'__'.$key;
+		$query = $this->_sql_left_join($key,$this->table,$fkey,[$table,$alias]);
+		$this->_sql_mergeRelCondition($cond,$alias,$filter,$options);
 		return $query;
 	}
 
