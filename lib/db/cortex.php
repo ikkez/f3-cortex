@@ -2253,7 +2253,8 @@ class CortexQueryParser extends \Prefab {
 							$part = substr($part, 0, $pos).' IN ('.$bindMarks.') ';
 							$ncond = array_merge($ncond, $val);
 						} elseif($val === null &&
-							preg_match('/(\S[\w\-]+\S)\s*(!?==?)\s*(?:\?|:\w+)/i',$part,$match)) {
+							preg_match('/((?:\S[\w\-]+\S.?)+)\s*'.
+								'(!?==?)\s*(?:\?|:\w+)/i',$part,$match)) {
 							$part = ' '.$match[1].' IS '.($match[2][0]=='!'?'NOT ':'').'NULL ';
 						} else
 							$ncond[] = $val;
