@@ -2796,6 +2796,17 @@ class CortexCollection extends \ArrayIterator {
 	}
 
 	/**
+	 * check if the collection contains a record with the given key-val set
+	 * @param $val
+	 * @param string $key
+	 * @return bool
+	 */
+	public function contains($val,$key='_id') {
+		$rel_ids = $this->getAll($key, true);
+		return in_array($val,$rel_ids);
+	}
+
+	/**
 	 * create a new hydrated collection from the given records
 	 * @param $records
 	 * @return CortexCollection
