@@ -53,7 +53,8 @@ class Cortex extends Cursor {
 		$countFields,   // relational counter buffer
 		$preBinds,      // bind values to be prepended to $filter
 		$vFields,       // virtual fields buffer
-		$_ttl;          // rel_ttl overwrite
+		$_ttl,          // rel_ttl overwrite
+		$charset;       // sql collation charset
 
 	/** @var Cursor */
 	protected $mapper;
@@ -267,6 +268,7 @@ class Cortex extends Cursor {
 			'db'=>$self->db,
 			'fluid'=>$self->fluid,
 			'primary'=>$self->primary,
+			'charset'=>$self->charset,
 		);
 		unset($self);
 		return $conf;
@@ -374,6 +376,8 @@ class Cortex extends Cursor {
 			if (!in_array($table, $schema->getTables())) {
 				// create table
 				$table = $schema->createTable($table);
+				if (isset($df) && $df['charset'])
+					$table->setCharset($df['charset']);
 				foreach ($fields as $field_key => $field_conf)
 					$table->addColumn($field_key, $field_conf);
 				if(isset($df) && $df['primary'] != 'id') {
