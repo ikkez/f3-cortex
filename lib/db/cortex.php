@@ -2797,12 +2797,14 @@ class CortexCollection extends \ArrayIterator {
 
 	/**
 	 * check if the collection contains a record with the given key-val set
-	 * @param $val
+	 * @param mixed $val
 	 * @param string $key
 	 * @return bool
 	 */
 	public function contains($val,$key='_id') {
 		$rel_ids = $this->getAll($key, true);
+		if ($val instanceof Cursor)
+			$val = $val->{$key};
 		return in_array($val,$rel_ids);
 	}
 
