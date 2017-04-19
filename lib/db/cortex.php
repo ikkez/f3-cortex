@@ -2302,7 +2302,7 @@ class CortexQueryParser extends \Prefab {
 		$pos = 0;
 		foreach ($parts as &$part) {
 			if (preg_match('/:\w+/i', $part, $match)) {
-				if (!isset($args[$match[0]]))
+				if (!array_key_exists($match[0],$args))
 					trigger_error(sprintf(self::E_MISSINGBINDKEY,
 						$match[0]),E_USER_ERROR);
 				$part = str_replace($match[0], '?', $part);
