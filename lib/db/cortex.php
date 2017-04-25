@@ -1790,6 +1790,15 @@ class Cortex extends Cursor {
 	}
 
 	/**
+	 * return raw value of a field
+	 * @param $key
+	 * @return mixed
+	 */
+	function &getRaw($key) {
+		return $this->get($key, true);
+	}
+
+	/**
 	 * find the ID values of given relation collection
 	 * @param $val string|array|object|bool
 	 * @param $rel_field string
