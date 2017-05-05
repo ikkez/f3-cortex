@@ -117,10 +117,10 @@ class Cortex extends Cursor {
 		$this->table = $this->getTable();
 		if (!$this->table)
 			trigger_error(self::E_NO_TABLE,E_USER_ERROR);
-		$this->ttl = $ttl ?: 60;
+		$this->ttl = $ttl ?: ($this->ttl ?: 60);
 		if (!$this->rel_ttl)
 			$this->rel_ttl = 0;
-		$this->_ttl = $this->rel_ttl ?: 0;
+		$this->_ttl = $this->rel_ttl ?: ($this->rel_ttl ?: 0);
 		if (static::$init == TRUE) return;
 		if ($this->fluid)
 			static::setup($this->db,$this->table,array());
