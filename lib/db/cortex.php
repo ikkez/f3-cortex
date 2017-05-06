@@ -2261,6 +2261,8 @@ class CortexQueryParser extends \Prefab {
 					if (is_int(strpos($part, '?'))) {
 						$val = array_shift($args);
 						if (is_int($pos = strpos($part, ' IN ?'))) {
+							if ($val instanceof CortexCollection)
+								$val = $val->getAll('_id',TRUE);
 							if (!is_array($val) || empty($val))
 								trigger_error(self::E_INBINDVALUE,E_USER_ERROR);
 							$bindMarks = str_repeat('?,',count($val) - 1).'?';
@@ -2397,6 +2399,8 @@ class CortexQueryParser extends \Prefab {
 					$part = ($not ? '!' : '').'preg_match(?,'.$match[0].')';
 				} // find IN operator
 				elseif (is_int($pos = strpos($upart, ' @IN '))) {
+					if ($val instanceof CortexCollection)
+						$val = $val->getAll('_id',TRUE);
 					if ($not = is_int($npos = strpos($upart, '@NOT')))
 						$pos = $npos;
 					$part = ($not ? '!' : '').'in_array('.substr($part, 0, $pos).
@@ -2518,6 +2522,8 @@ class CortexQueryParser extends \Prefab {
 					$var = array('$not' => $var);
 			} // find IN operator
 			elseif (in_array($upart, array('IN','NOT IN'))) {
+				if ($var instanceof CortexCollection)
+					$var = $var->getAll('_id',true);
 				$var = array(($upart=='NOT IN')?'$nin':'$in' => array_values($var));
 			} // translate operators
 			elseif (!in_array($match[0], array('==', '='))) {
