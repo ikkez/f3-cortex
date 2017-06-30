@@ -1,4 +1,4 @@
-![Cortex](https://dl.dropboxusercontent.com/u/3077539/_linked/cortex_icon.png?asd)
+![Cortex](https://ikkez.de/linked/cortex_icon.png)
 ***
 
 ### A general purpose Data-Mapper for the PHP Fat-Free Framework
@@ -386,7 +386,7 @@ To make relations work, you need to use a model class with field configuration. 
 
 This is how a field config looks with a relation:
 
-![Cortex Rel 1](https://dl.dropboxusercontent.com/u/3077539/_linked/cortex-class-conf.png)
+![Cortex Rel 1](https://ikkez.de/linked/cortex-class-conf.png)
 
 This creates an aggregation between Author and News, so
 
@@ -394,7 +394,7 @@ This creates an aggregation between Author and News, so
 
 > One Author has written many News.
 
-![UML 1](https://dl.dropboxusercontent.com/u/3077539/_linked/cortex-dia-1.png?)
+![UML 1](https://ikkez.de/linked//cortex-dia-1.png)
 
 As a side note: `belongs-to-*` definitions will create a new column in that table, that is used to save the id of the counterpart model (foreign key field).
 Whereas `has-*` definitions are just virtual fields which are going to query the linked models by their own id (the inverse way). This leads us to the following configuration schema:
@@ -567,7 +567,7 @@ In case you want to bind a many-to-many relation to itself, meaning that you'd l
     </tr>
 </table>
 
-A common scenario is where a `User` has friends and that relation target is also `User`. So in you would bind the relation to itself: 
+A common scenario is where a `User` has friends and that relation target is also `User`. So it would bind the relation to itself: 
 
 ```php
 namespace Model;
@@ -580,7 +580,7 @@ class User extends \DB\Cortex {
 }
 ```
 
-Because this is also a many to many relation, a pivor table is needed too. It's name is generated based on the table and fields name, but can also be defined as 3rd array parameter, i.e. `['\Model\User','friends','user_friends']`.
+Because this is also a many to many relation, a pivot table is needed too. Its name is generated based on the table and fields name, but can also be defined as 3rd array parameter, i.e. `['\Model\User','friends','user_friends']`.
 
 ![Cortex m:m self-ref](https://yuml.me/9467f355)
 
@@ -755,6 +755,13 @@ Especially for value comparison, it's **highly recommended** to use placeholders
 *  The `IN` operator usually needs multiple placeholders in raw PDO (like `foo IN (?,?,?)`). In Cortex queries you simply use an array for this, the QueryParser does the rest.
 
 	`array('foo IN ?', array(1,2,3))`
+	
+	You can also use a CortexCollection as bind parameter. In that case, the primary keys are automatically used for matching:
+	
+	```php
+	$fruits = $fruitModel->find(['taste = ?','sweet']);
+	$result = $userModel->find(['favorite_fruit IN ?',$fruits])
+	```
 
 
 ### Options
@@ -1371,6 +1378,14 @@ mixed get( string $key [, bool $raw = false ])
 If `$raw` is `true`, it'll return the raw data from a field as is. No further processing, no relation is resolved, no get-event fired.
 Useful if you only want the raw foreign key value of a relational field.
 
+### getRaw
+**Retrieve raw contents of key**
+
+```php
+mixed getRaw( string $key )
+```
+
+This is a shortcut method to `$mapper->get('key', TRUE)`.
 
 ### getFieldConfiguration
 **Returns model $fieldConf array**
@@ -1614,6 +1629,60 @@ if ($result)
 
 Use the `$reldepths` parameter to define what to cast, see [cast](#cast) method for details.
 
+### compare
+**compare collection with a given ID stack**
+
+```php
+array compare( array|CortexCollection $stack [, string $cpm_key = '_id'])
+```
+
+This method is useful to compare the current collection with another collection or a list of values that is checked for existence in the collection records. 
+
+In example you got a relation collection that is about to be updated and you want to know which records are going to be removed or would be new in the collection:
+
+```php
+$res = $user->friends->compare($newFriendIds);
+if (isset($res['old'])) {
+	// removed friends
+}
+if (isset($res['new'])) {
+	// added friends
+	foreach($res['new'] as $userId) {
+		// do something with $userId
+	}
+}
+```
+
+The compare result `$res` is an array that can contain the array keys `old` and `new`, which both represent an array of `$cpm_key` values.  
+
+NB: This is just a comparison - it actually does not update any of the collections. Add a simple `$user->friends = $newFriendIds;` after comparison to update the collection.
+ 
+
+### contains
+**check if the collection contains a record with the given key-val set**
+
+```php
+array contains( mixed|Cortex $val [, string $key = '_id' ])
+```
+
+This method can come handy to check if a collections contains a given record, or has a record with a given value:
+
+```php
+if ($user->friends && $user->friends->contains($newFriend)) {
+	$f3->error(400,'This user is already your friend');
+	return;
+}
+```
+
+With custom compare key:
+
+```php
+if ($user->blocked_users->contains($currentUserId,'target')) {
+	// this user has blocked you
+}
+```
+
+
 ### expose
 **return internal array representation**
 
@@ -1742,7 +1811,7 @@ Cortex currently only reflects to the most common use cases. If you need more ex
 
 Anyways, I hope you find this useful. If you like this plugin, why not make a donation?
 
-[![buy me a Beer](https://dl.dropboxusercontent.com/u/3077539/Beer/bdb_small_single.png)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=44UHPNUCVP7QG)
+[![buy me a Beer](https://ikkez.de/linked/Beer/bdb_small_single.png)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=44UHPNUCVP7QG)
 
 If you like to see Cortex in action, have a look at [fabulog](https://github.com/ikkez/fabulog "the new fabulous blog-ware").
 

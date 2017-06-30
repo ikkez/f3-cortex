@@ -1,6 +1,29 @@
 CHANGELOG - Cortex ORM
 
-1.4.2 (27.01.2017)
+1.5.0 (30.06.2017)
+*	F3 3.6.2 compatibility fixes
+*	new: Collection->contains method
+*	new: Collection->compare method
+*	allow a CortexCollection to be used as bind parameter for `IN` operators
+*	allow to optionally set a table $charset
+*	improved field whitelisting, #23 #24
+*	include virtual fields in whitelist, #48
+*	reduced schema queries
+*	optimized table and field escaping in queries #46
+*	use aliased table on join conditions
+*	use class ttl defaults if any
+*	added getRaw shortcut method
+*	added space after `IN` group in query condition
+*	added isSelf configuration existence check
+*	Bug fix: issue with NULL-value as named bind parameter
+*	Bug fix: table prefix on NULL comparison
+*	Bug fix: invalid bind value on multiple rel counts
+
+1.4.3 (01.03.2017)
+*	Bug fix: fix NULL bind value issue, #40
+*	Bug fix: fix NULL comparison, #40
+
+1.4.2 (27.02.2017)
 *	new: self-referencing m:m relations
 *	new: support for NULL filter bind values (like `array('foo != ?',null)`)
 *	raised error level (from NOTICE to USER_ERROR)
