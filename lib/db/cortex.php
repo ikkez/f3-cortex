@@ -836,9 +836,14 @@ class Cortex extends Cursor {
 				array_unshift($filter,$crit);
 			}
 		}
+		if ($options) {
+			$options = $this->queryParser->prepareOptions($options,$this->dbsType);
+			if ($count)
+				unset($options['order']);
+		}
 		return ($count)
 			? $this->mapper->count($filter,$options,$ttl)
-			: $this->mapper->find($filter,$this->queryParser->prepareOptions($options,$this->dbsType),$ttl);
+			: $this->mapper->find($filter,$options,$ttl);
 	}
 
 	/**
