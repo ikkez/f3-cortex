@@ -1249,18 +1249,18 @@ class Cortex extends Cursor {
 					trigger_error('Cannot add direct relational counter.',E_USER_ERROR);
 			} elseif($this->fieldConf[$key]['relType'] == 'has-many') {
 				$relConf=$this->fieldConf[$key]['has-many'];
-			 	if ($relConf['hasRel']=='has-many') {
+				if ($relConf['hasRel']=='has-many') {
 					// many-to-many
 					if ($this->dbsType == 'sql') {
 						$mmTable = $this->mmTable($relConf,$key);
 						$filter = array($mmTable.'.'.$relConf['relField']
 							.' = '.$this->table.'.'.$this->primary);
-						$from=$mmTable;
+						$from = $this->db->quotekey($mmTable);
 						if (array_key_exists($key, $this->relFilter) &&
 							!empty($this->relFilter[$key][0])) {
 							$options=array();
-							$from = $mmTable.' '.$this->_sql_left_join($key,$mmTable,
-									$relConf['relPK'],$relConf['relTable']);
+							$from = $this->db->quotekey($mmTable).' '.
+								$this->_sql_left_join($key,$mmTable,$relConf['relPK'],$relConf['relTable']);
 							$relFilter = $this->relFilter[$key];
 							$this->_sql_mergeRelCondition($relFilter,$relConf['relTable'],
 								$filter,$options);
@@ -1271,8 +1271,8 @@ class Cortex extends Cursor {
 						if (count($filter)>0)
 							$this->preBinds=array_merge($this->preBinds,$filter);
 						$this->mapper->set($alias,
-							'(select count('.$this->db->quotekey($mmTable.'.'.$relConf['relField']).') from '.
-							$this->db->quotekey($from).' where '.$crit.
+							'(select count('.$this->db->quotekey($mmTable.'.'.$relConf['relField']).')'.
+							' from '.$from.' where '.$crit.
 							' group by '.$this->db->quotekey($mmTable.'.'.$relConf['relField']).')');
 						if ($this->whitelist && !in_array($alias,$this->whitelist))
 							$this->whitelist[] = $alias;
