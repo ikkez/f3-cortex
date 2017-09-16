@@ -2449,6 +2449,8 @@ class CortexQueryParser extends \Prefab {
 		$child = array();
 		for ($i = 0, $max = count($parts); $i < $max; $i++) {
 			$part = $parts[$i];
+			if (is_string($part))
+				$part = trim($part);
 			if ($part == '(') {
 				// add sub-bracket to parse array
 				if ($b_offset > 0)
@@ -2465,14 +2467,15 @@ class CortexQueryParser extends \Prefab {
 				else
 					// add sub-bracket to parse array
 					$child[] = $part;
-			} // add to parse array
-			elseif ($b_offset > 0)
-				$child[] = $part;
-			// condition type
-			elseif (!is_array($part)) {
-				if (strtoupper(trim($part)) == 'AND')
+			}
+			elseif ($b_offset > 0) {
+				// add to parse array
+				$child[]=$part;
+				// condition type
+			} elseif (!is_array($part)) {
+				if (strtoupper($part) == 'AND')
 					$add = true;
-				elseif (strtoupper(trim($part)) == 'OR')
+				elseif (strtoupper($part) == 'OR')
 					$or = true;
 			} else // skip
 				$ncond[] = $part;
