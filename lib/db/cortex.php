@@ -312,6 +312,7 @@ class Cortex extends Cursor {
 	static public function setup($db=null, $table=null, $fields=null) {
 		/** @var Cortex $self */
 		$self = get_called_class();
+		$self::$schema_cache=[];
 		if (is_null($db) || is_null($table) || is_null($fields))
 			$df = $self::resolveConfiguration();
 		if (!is_object($db=(is_string($db=($db?:$df['db']))?\Base::instance()->get($db):$db)))
