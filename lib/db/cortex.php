@@ -18,7 +18,7 @@
  *  https://github.com/ikkez/F3-Sugar/
  *
  *  @package DB
- *  @version 1.5.0
+ *  @version 1.5.1-dev
  *  @date 30.06.2017
  *  @since 24.04.2012
  */
@@ -157,7 +157,7 @@ class Cortex extends Cursor {
 			$f3->get('CORTEX.standardiseID') : TRUE;
 		if(!empty($this->fieldConf))
 			foreach($this->fieldConf as &$conf) {
-				$conf=static::resolveRelationConf($conf);
+				$conf=static::resolveRelationConf($conf,$this->primary);
 				unset($conf);
 			}
 	}
@@ -512,9 +512,10 @@ class Cortex extends Cursor {
 	/**
 	 * resolve relation field types
 	 * @param array $field
+	 * @param string $pkey
 	 * @return array
 	 */
-	protected static function resolveRelationConf($field) {
+	protected static function resolveRelationConf($field,$pkey=NULL) {
 		if (array_key_exists('belongs-to-one', $field)) {
 			// find primary field definition
 			if (!is_array($relConf = $field['belongs-to-one']))
@@ -552,7 +553,10 @@ class Cortex extends Cursor {
 				$field['has-many']['relField'] = $relConf[1];
 				$field['has-many']['relFieldType'] = isset($rel['fieldConf'][$relConf[1]]['type']) ?
 					$rel['fieldConf'][$relConf[1]]['type'] : Schema::DT_INT;
-				$field['has-many']['relPK'] = isset($relConf[3])?$relConf[3]:$rel['primary'];
+				$field['has-many']['relPK'] = isset($relConf['relPK'])?
+					$relConf['relPK']:$rel['primary'];
+				$field['has-many']['localKey'] = isset($relConf['localKey'])?
+					$relConf['localKey']:($pkey?:'_id');
 			} else {
 				// has-many <> belongs-to-one (m:1)
 				$field['has-many']['hasRel'] = 'belongs-to-one';
@@ -1165,8 +1169,8 @@ class Cortex extends Cursor {
 				if($fields[$key]['relType'] == 'has-many') {
 					$relConf = $fields[$key]['has-many'];
 					$mmTable = $this->mmTable($relConf,$key);
-					$rel = $this->getRelInstance(null, array('db'=>$this->db, 'table'=>$mmTable));
-					$id = $this->get($relConf['relPK'],true);
+					$mm = $this->getRelInstance(null, array('db'=>$this->db, 'table'=>$mmTable));
+					$id = $this->get($relConf['localKey'],true);
 					$filter = [$relConf['relField'].' = ?',$id];
 					if ($relConf['isSelf']) {
 						$filter[0].= ' OR '.$relConf['relField'].'_ref = ?';
@@ -1174,20 +1178,20 @@ class Cortex extends Cursor {
 					}
 					// delete all refs
 					if (is_null($val))
-						$rel->erase($filter);
+						$mm->erase($filter);
 					// update refs
 					elseif (is_array($val)) {
-						$rel->erase($filter);
+						$mm->erase($filter);
 						foreach($val as $v) {
 							if ($relConf['isSelf'] && $v==$id)
 								continue;
-							$rel->set($key,$v);
-							$rel->set($relConf['relField'].($relConf['isSelf']?'_ref':''),$id);
-							$rel->save();
-							$rel->reset();
+							$mm->set($key,$v);
+							$mm->set($relConf['relField'].($relConf['isSelf']?'_ref':''),$id);
+							$mm->save();
+							$mm->reset();
 						}
 					}
-					unset($rel);
+					unset($mm);
 				} elseif($fields[$key]['relType'] == 'has-one') {
 					$val->save();
 				}
@@ -1692,7 +1696,7 @@ class Cortex extends Cursor {
 					} // no collection
 					else {
 						// find foreign keys
-						$fId=$this->get($fromConf['relPK'],true);
+						$fId=$this->get($fromConf['localKey'],true);
 						$filter = [$fromConf['relField'].' = ?',$fId];
 						if ($fromConf['isSelf']) {
 							$filter = [$fromConf['relField'].' = ?',$fId];
@@ -1713,7 +1717,7 @@ class Cortex extends Cursor {
 							unset($rel);
 							$rel = $this->getRelInstance($fromConf[0],null,$key,true);
 							// load foreign models
-							$filter = array($toConf['relPK'].' IN ?', $fkeys);
+							$filter = array($fromConf['relPK'].' IN ?', $fkeys);
 							$filter = $this->mergeWithRelFilter($key, $filter);
 							$this->fieldsCache[$key] = $rel->find($filter,
 								$this->getRelFilterOption($key),$this->_ttl);
@@ -1896,16 +1900,16 @@ class Cortex extends Cursor {
 
 	/**
 	 * get relation model from config
-	 * @param $fieldConf
+	 * @param $relConf
 	 * @param $key
 	 * @return Cortex
 	 */
-	protected function getRelFromConf(&$fieldConf, $key) {
-		if (!is_array($fieldConf))
-			$fieldConf = array($fieldConf, '_id');
-		$rel = $this->getRelInstance($fieldConf[0],null,$key,true);
-		if($this->dbsType=='sql' && $fieldConf[1] == '_id')
-			$fieldConf[1] = $rel->primary;
+	protected function getRelFromConf(&$relConf, $key) {
+		if (!is_array($relConf))
+			$relConf = array($relConf, '_id');
+		$rel = $this->getRelInstance($relConf[0],null,$key,true);
+		if($this->dbsType=='sql' && $relConf[1] == '_id')
+			$relConf[1] = $rel->primary;
 		return $rel;
 	}
 
