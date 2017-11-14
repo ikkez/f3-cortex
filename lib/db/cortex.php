@@ -2136,6 +2136,8 @@ class Cortex extends Cursor {
 	 * @return mixed
 	 */
 	public function changed($key=null) {
+		if ($key=='_id')
+			$key = $this->primary;
 		if (method_exists($this->mapper,'changed'))
 			return $this->mapper->changed($key);
 		else
