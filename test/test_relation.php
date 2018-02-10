@@ -337,7 +337,7 @@ class Test_Relation {
 		$c=$tag1[0]->news[0]->title == 'Can it run Crysis?';
 		$news->erase();
 		$tag1 = $tag->find(array($tag_pk.' = ?',$tag_id[0]));
-		$d=count($tag1[0]->news);
+		$d=count($tag1[0]->news?:[]);
 		$test->expect(
 			$a == 1 && $b == 1 && $c && $d == 0,
 			$type.': many-to-many relation cleaned by erase cascade'
