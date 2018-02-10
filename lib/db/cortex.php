@@ -2397,7 +2397,7 @@ class CortexQueryParser extends \Prefab {
 			if (preg_match('/\s*\b(AND|OR)\b\s*/i',$part))
 				continue;
 			// prefix field names
-			$part = preg_replace('/([a-z_-]+)/i', '@$1', $part, -1, $count);
+			$part = preg_replace('/([\w-]+)/i', '@$1', $part, -1, $count);
 			// value comparison
 			if (is_int(strpos($part, '?'))) {
 				$val = array_shift($args);
