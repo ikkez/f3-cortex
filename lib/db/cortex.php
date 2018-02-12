@@ -2397,7 +2397,7 @@ class CortexQueryParser extends \Prefab {
 			if (preg_match('/\s*\b(AND|OR)\b\s*/i',$part))
 				continue;
 			// prefix field names
-			$part = preg_replace('/([\w-]+)/i', '@$1', $part, -1, $count);
+			$part = preg_replace('/([a-z_-]+(?:[\w-]+))/i', '@$1', $part, -1, $count);
 			// value comparison
 			if (is_int(strpos($part, '?'))) {
 				$val = array_shift($args);
@@ -2587,8 +2587,9 @@ class CortexQueryParser extends \Prefab {
 		switch ($engine) {
 			case 'jig':
 				if (array_key_exists('order', $options))
-					$options['order'] = str_replace(array('asc', 'desc'),
-						array('SORT_ASC', 'SORT_DESC'), strtolower($options['order']));
+					$options['order'] = preg_replace(
+						['/(?<=\h)(ASC)(?=\W|$)/i','/(?<=\h)(DESC)(?=\W|$)/i'],
+						['SORT_ASC','SORT_DESC'],$options['order']);
 				break;
 			case 'mongo':
 				if (array_key_exists('order', $options)) {
