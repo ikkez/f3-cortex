@@ -163,6 +163,14 @@ class Cortex extends Cursor {
 	}
 
 	/**
+	 * return raw mapper instance
+	 * @return Cursor
+	 */
+	public function getMapper() {
+		return $this->mapper;
+	}
+
+	/**
 	 * get fields or set whitelist / blacklist of fields
 	 * @param array $fields
 	 * @param bool  $exclude
