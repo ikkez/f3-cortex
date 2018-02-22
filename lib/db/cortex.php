@@ -2625,7 +2625,7 @@ class CortexQueryParser extends \Prefab {
 				if (array_key_exists('order', $options) &&
 					FALSE===strpos($options['order'],$char))
 					$options['order']=preg_replace_callback(
-						'/(\w+\h?\(|(?:DESC|ASC)(?:\s+\w+)*)|(\b\d?\w(?:[\w\-.]+))/i',
+						'/(\w+\h?\(|(?:DESC|ASC)(?:\s+\w+)*)|(\b\d?[a-zA-Z_](?:[\w\-.])*)/i',
 						function($match) use($db) {
 							if (!isset($match[2]))
 								return $match[1];
