@@ -766,7 +766,7 @@ class Cortex extends Cursor {
 			$qtable = $this->db->quotekey($this->table);
 			if (isset($options['order']) && $this->db->driver() == 'pgsql')
 				// PostgreSQLism: sort NULL values to the end of a table
-				$options['order'] = preg_replace('/\h+DESC/i',' DESC NULLS LAST',$options['order']);
+				$options['order'] = preg_replace('/\h+DESC(?=\s*(?:$|,))/i',' DESC NULLS LAST',$options['order']);
 			if ($hasJoin) {
 				// assemble full sql query
 				$adhoc='';
@@ -2625,7 +2625,10 @@ class CortexQueryParser extends \Prefab {
 				if (array_key_exists('order', $options) &&
 					FALSE===strpos($options['order'],$char))
 					$options['order']=preg_replace_callback(
-						'/(\w+\h?\(|(?:DESC|ASC)(?:\s+\w+)*)|(\b\d?[a-zA-Z_](?:[\w\-.])*)/i',
+						'/(\w+\h?\(|'. // skip function names
+						'\b(?!\w+)(?:\s+\w+)+|' . // skip field args
+						'\)\s+\w+)|'. // skip function args
+						'(\b\d?[a-zA-Z_](?:[\w\-.])*)/i', // match table/field keys
 						function($match) use($db) {
 							if (!isset($match[2]))
 								return $match[1];
