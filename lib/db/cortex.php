@@ -850,7 +850,7 @@ class Cortex extends Cursor {
 			}
 		}
 		if ($options) {
-			$options = $this->queryParser->prepareOptions($options,$this->dbsType);
+			$options = $this->queryParser->prepareOptions($options,$this->dbsType,$this->db);
 			if ($count)
 				unset($options['order']);
 		}
@@ -2587,9 +2587,10 @@ class CortexQueryParser extends \Prefab {
 	 *
 	 * @param array $options
 	 * @param string $engine
+	 * @param object $db
 	 * @return array|null
 	 */
-	public function prepareOptions($options, $engine) {
+	public function prepareOptions($options, $engine, $db) {
 		if (empty($options) || !is_array($options))
 			return null;
 		switch ($engine) {
@@ -2618,6 +2619,18 @@ class CortexQueryParser extends \Prefab {
 					$options['group']['keys']=$keys;
 					$options['group']['initial']=$keys;
 				}
+				break;
+			case 'sql':
+				$char=substr($db->quotekey(''),0,1);
+				if (array_key_exists('order', $options) &&
+					FALSE===strpos($options['order'],$char))
+					$options['order']=preg_replace_callback(
+						'/(\w+\h?\(|(?:DESC|ASC)(?:\s+\w+)*)|(\b\d?\w(?:[\w\-.]+))/i',
+						function($match) use($db) {
+							if (!isset($match[2]))
+								return $match[1];
+							return $db->quotekey($match[2]);
+						}, $options['order']);
 				break;
 		}
 		return $options;
