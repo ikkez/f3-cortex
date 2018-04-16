@@ -259,15 +259,24 @@ class Test_Filter {
 		);
 
 		$tag->reset();
-		$tag->countRel('news');
-		$result = $tag->find(null,array('order'=>'count_news DESC, title DESC','limit'=>1,'offset'=>1))->castAll(0);
 
-		$test->expect(
-			$result[0]['title'] == 'Web Design' &&
-			$result[0]['count_news'] == 1,
-			$type.': apply limit and offset on aggregated collection'
-		);
+		if ($type != 'sqlsrv2008') {
+			$tag->countRel('news');
+			$result=$tag->find(NULL,
+				array('order'=>'count_news DESC, title DESC','limit'=>1,'offset'=>1))
+				->castAll(0);
 
+			$test->expect(
+				$result[0]['title']=='Web Design' &&
+				$result[0]['count_news']==1,
+				$type.': apply limit and offset on aggregated collection'
+			);
+		} else {
+			$test->expect(
+				false,
+				$type.': apply limit and offset on aggregated collection'
+			);
+		}
 
 		$author->reset();
 		$author->countRel('news');

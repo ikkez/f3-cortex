@@ -10,7 +10,7 @@ class Test_Relation {
 	private function getResult($result)
 	{
 		$out = array();
-		foreach ($result as $row) {
+		foreach ($result?:[] as $row) {
 			if(is_object($row))
 				$row = $row->cast();
 			unset($row['_id']);

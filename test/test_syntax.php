@@ -280,8 +280,7 @@ class Test_Syntax {
 		);
 
 		// check limit
-		$result = $this->getResult($cx->find(
-			null, array('limit' => '2')));
+		$result = $this->getResult($cx->find(null, array('limit' => 2)));
 		$expected = array(
 			0 => array(
 				'title' => 'bar1',
@@ -360,7 +359,7 @@ class Test_Syntax {
 	private function getResult($result)
 	{
 		$out = array();
-		foreach ($result as $row) {
+		foreach ($result?:[] as $row) {
 			$row = $row->cast();
 			unset($row['_id']);
 			unset($row['id']);
