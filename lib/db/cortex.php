@@ -2117,10 +2117,11 @@ class Cortex extends Cursor {
 	public function reset($mapper = true) {
 		if ($mapper)
 			$this->mapper->reset();
-		$this->fieldsCache=array();
-		$this->saveCsd=array();
-		$this->countFields=array();
-		$this->preBinds=array();
+		$this->fieldsCache=[];
+		$this->saveCsd=[];
+		$this->countFields=[];
+		$this->preBinds=[];
+		$this->vFields=[];
 		$this->grp_stack=null;
 		// set default values
 		if (($this->dbsType == 'jig' || $this->dbsType == 'mongo')
