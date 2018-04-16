@@ -1384,7 +1384,9 @@ class Cortex extends Cursor {
 				if (is_null($val))
 					$val = NULL;
 				elseif (is_object($val) &&
-					!($this->dbsType=='mongo' && $val instanceof \MongoId)) {
+					!($this->dbsType=='mongo' && (
+						($this->db->legacy() && $val instanceof \MongoId) ||
+						(!$this->db->legacy() && $val instanceof \MongoDB\BSON\ObjectId)))) {
 					// fetch fkey from mapper
 					if (!$val instanceof Cortex || $val->dry())
 						trigger_error(self::E_INVALID_RELATION_OBJECT,E_USER_ERROR);
@@ -1393,8 +1395,9 @@ class Cortex extends Cursor {
 						$rel_field = (is_array($relConf) ? $relConf[1] : '_id');
 						$val = $val->get($rel_field,true);
 					}
-				} elseif ($this->dbsType == 'mongo' && !$val instanceof \MongoId)
-					$val = new \MongoId($val);
+				} elseif ($this->dbsType == 'mongo' && (($this->db->legacy() && !$val instanceof \MongoId)
+						|| (!$this->db->legacy() && !$val instanceof \MongoDB\BSON\ObjectId)))
+					$val = $this->db->legacy() ? new \MongoId($val) : new \MongoDB\BSON\ObjectId($val);
 			} elseif (isset($fields[$key]['has-one'])){
 				$relConf = $fields[$key]['has-one'];
 				if (is_null($val)) {
@@ -1445,9 +1448,10 @@ class Cortex extends Cursor {
 				&& array_key_exists('nullable', $fields[$key]) && $fields[$key]['nullable'] === false)
 				trigger_error(sprintf(self::E_NULLABLE_COLLISION,$key),E_USER_ERROR);
 			// MongoId shorthand
-			if ($this->dbsType == 'mongo' && !$val instanceof \MongoId) {
+			if ($this->dbsType == 'mongo' && (($this->db->legacy() && !$val instanceof \MongoId)
+					|| (!$this->db->legacy() && !$val instanceof \MongoDB\BSON\ObjectId))) {
 				if ($key == '_id')
-					$val = new \MongoId($val);
+					$val = $this->db->legacy() ? new \MongoId($val) : new \MongoDB\BSON\ObjectId($val);
 				elseif (preg_match('/INT/i',$fields[$key]['type'])
 					&& !isset($fields[$key]['relType']))
 					$val = (int) $val;
@@ -1567,6 +1571,8 @@ class Cortex extends Cursor {
 		}
 		if ($raw) {
 			$out = $this->exists($key) ? $this->mapper->{$key} : NULL;
+			if ($this->dbsType == 'mongo' && !$this->db->legacy() && $out instanceof \MongoDB\Model\BSONArray)
+				$out = (array) $out;
 			return $out;
 		}
 		if (!empty($fields) && isset($fields[$key]) && is_array($fields[$key])
@@ -1736,7 +1742,7 @@ class Cortex extends Cursor {
 			elseif (isset($fields[$key]['belongs-to-many'])) {
 				// many-to-many, unidirectional
 				$fields[$key]['type'] = self::DT_JSON;
-				$result = !$this->exists($key) ? null :$this->mapper->get($key);
+				$result = $this->getRaw($key);
 				if ($this->dbsType == 'sql')
 					$result = json_decode($result, true);
 				if (!is_array($result))
@@ -1798,7 +1804,8 @@ class Cortex extends Cursor {
 		// fetch cached value, if existing
 		$val = array_key_exists($key,$this->fieldsCache) ? $this->fieldsCache[$key]
 			: (($this->exists($key)) ? $this->mapper->{$key} : null);
-		if ($this->dbsType == 'mongo' && $val instanceof \MongoId) {
+		if ($this->dbsType == 'mongo' && (($this->db->legacy() && $val instanceof \MongoId) ||
+				(!$this->db->legacy() && $val instanceof \MongoDB\BSON\ObjectId))) {
 			// conversion to string makes further processing in template, etc. much easier
 			$val = (string) $val;
 		}
@@ -1848,13 +1855,14 @@ class Cortex extends Cursor {
 			$isMongo = ($this->dbsType == 'mongo');
 			foreach ($val as &$item) {
 				if (is_object($item) &&
-					!($isMongo && $item instanceof \MongoId)) {
+					!($isMongo && (($this->db->legacy() && $item instanceof \MongoId) ||
+						(!$this->db->legacy() && $item instanceof \MongoDB\BSON\ObjectId)))) {
 					if (!$item instanceof Cortex || $item->dry())
 						trigger_error(self::E_INVALID_RELATION_OBJECT,E_USER_ERROR);
 					else $item = $item->get($rel_field,true);
 				}
 				if ($isMongo && $rel_field == '_id' && is_string($item))
-					$item = new \MongoId($item);
+					$item = $this->db->legacy() ? new \MongoId($item) : new \MongoDB\BSON\ObjectId($item);
 				if (is_numeric($item))
 					$item = (int) $item;
 				unset($item);
@@ -2259,7 +2267,7 @@ class CortexQueryParser extends \Prefab {
 				if (is_int(strpos($where, ':')))
 					list($parts, $args) = $this->convertNamedParams($parts, $args);
 				foreach ($parts as &$part) {
-					$part = $this->_mongo_parse_relational_op($part, $args, $fieldConf);
+					$part = $this->_mongo_parse_relational_op($part, $args, $db, $fieldConf);
 					unset($part);
 				}
 				$ncond = $this->_mongo_parse_logical_op($parts);
@@ -2415,7 +2423,7 @@ class CortexQueryParser extends \Prefab {
 				if (is_int(strpos($upart = strtoupper($part), ' @LIKE '))) {
 					if ($not = is_int($npos = strpos($upart, '@NOT')))
 						$pos = $npos;
-					$val = $this->_likeValueToRegEx($val);
+					$val = '/'.$this->_likeValueToRegEx($val).'/iu';
 					$part = ($not ? '!' : '').'preg_match(?,'.$match[0].')';
 				} // find IN operator
 				elseif (is_int($pos = strpos($upart, ' @IN '))) {
@@ -2509,10 +2517,11 @@ class CortexQueryParser extends \Prefab {
 	 * find and convert relational operators
 	 * @param $part
 	 * @param $args
+	 * @param \DB\Mongo $db
 	 * @param null $fieldConf
 	 * @return array|null
 	 */
-	protected function _mongo_parse_relational_op($part, &$args, $fieldConf=null) {
+	protected function _mongo_parse_relational_op($part, &$args, \DB\Mongo $db, $fieldConf=null) {
 		if (is_null($part))
 			return $part;
 		if (preg_match('/\<\=|\>\=|\<\>|\<|\>|\!\=|\=\=|\=|like|not like|in|not in/i', $part, $match)) {
@@ -2530,17 +2539,21 @@ class CortexQueryParser extends \Prefab {
 			if ($key == '_id' || (isset($fieldConf[$key]) && isset($fieldConf[$key]['relType']))) {
 				if (is_array($var))
 					foreach ($var as &$id) {
-						if (!$id instanceof \MongoId)
+						if ($db->legacy() && !$id instanceof \MongoId)
 							$id = new \MongoId($id);
+						elseif (!$db->legacy() && !$id instanceof \MongoDB\BSON\ObjectId)
+							$id = new \MongoDB\BSON\ObjectId($id);
 						unset($id);
 					}
-				elseif(!$var instanceof \MongoId)
+				elseif($db->legacy() && !$var instanceof \MongoId)
 					$var = new \MongoId($var);
+				elseif(!$db->legacy() && !$var instanceof \MongoDB\BSON\ObjectId)
+					$var = new \MongoDB\BSON\ObjectId($var);
 			}
 			// find LIKE operator
 			if (in_array($upart, array('LIKE','NOT LIKE'))) {
 				$rgx = $this->_likeValueToRegEx($var);
-				$var = new \MongoRegex($rgx);
+				$var = $db->legacy() ? new \MongoRegex('/'.$rgx.'/iu') : new \MongoDB\BSON\Regex($rgx,'iu');
 				if ($upart == 'NOT LIKE')
 					$var = array('$not' => $var);
 			} // find IN operator
@@ -2575,7 +2588,7 @@ class CortexQueryParser extends \Prefab {
 		// %var  -> /var$/
 		elseif ($var[0] == '%')
 			$var = substr($var, 1).'$';
-		return '/'.$var.'/iu';
+		return $var;
 	}
 
 	/**
@@ -2733,7 +2746,7 @@ class CortexCollection extends \ArrayIterator {
 		if (!$this->hasRelSet($prop) || !($relSet = $this->getRelSet($prop)))
 			return null;
 		foreach ($keys as &$key) {
-			if ($key instanceof \MongoId)
+			if ($key instanceof \MongoId || $key instanceof \MongoDB\BSON\ObjectId)
 				$key = (string) $key;
 			unset($key);
 		}

@@ -13,12 +13,15 @@ class Cortex extends Controller
 //			'sql-mysql' => new \DB\SQL('mysql:host=localhost;port=3306;dbname=fatfree', 'fatfree', ''),
 			'sql-sqlite' => new \DB\SQL('sqlite:data/sqlite.db'),
 //			'sql-pgsql' => new \DB\SQL('pgsql:host=localhost;dbname=fatfree', 'fatfree', 'fatfree'),
-//			'jig' => new \DB\Jig('data/'),
+//			'jig' => new \DB\Jig('data/',\DB\Jig::FORMAT_JSON,true),
 //			'mongo' => new \DB\Mongo('mongodb://localhost:27017', 'testdb'),
-//			'sqlsrv2012' => new \DB\SQL('sqlsrv:SERVER=LOCALHOST\SQLEXPRESS2012;Database=fatfree','fatfree', 'fatfree'),
-//			'sqlsrv2008' => new \DB\SQL('sqlsrv:SERVER=LOCALHOST\SQLEXPRESS2008;Database=fatfree','fatfree', 'fatfree'),
+//			'sqlsrv2008' => new \DB\SQL('sqlsrv:SERVER=WIN7\SQLEXPRESS2008;Database=fatfree','sa', 'fatfree'),
+//			'sqlsrv2012' => new \DB\SQL('sqlsrv:SERVER=WIN7\SQLEXPRESS2012;Database=fatfree','sa', 'fatfree'),
+//			'sqlsrv2014' => new \DB\SQL('sqlsrv:SERVER=WIN7\SQLEXPRESS2014;Database=fatfree','sa', 'fatfree'),
 		);
 		$results = array();
+
+//		$dbs['mongo']->log(false);
 
 		// Test Syntax
 		foreach ($dbs as $type => $db) {
@@ -40,7 +43,7 @@ class Cortex extends Controller
 			$results = array_merge((array) $results, (array) $test->run($db, $type));
 		}
 
-		// Further Common Tests
+//		 Further Common Tests
 		if (isset($dbs['sql-mysql'])) {
 			$test = new \Test_Common();
 			$f3->set('DB', $dbs['sql-mysql']);
