@@ -394,7 +394,7 @@ This creates an aggregation between Author and News, so
 
 > One Author has written many News.
 
-![UML 1](https://ikkez.de/linked//cortex-dia-1.png)
+![UML 1](https://ikkez.de/linked/cortex-dia-1.png)
 
 As a side note: `belongs-to-*` definitions will create a new column in that table, that is used to save the id of the counterpart model (foreign key field).
 Whereas `has-*` definitions are just virtual fields which are going to query the linked models by their own id (the inverse way). This leads us to the following configuration schema:
@@ -582,7 +582,7 @@ class User extends \DB\Cortex {
 
 Because this is also a many to many relation, a pivot table is needed too. Its name is generated based on the table and fields name, but can also be defined as 3rd array parameter, i.e. `['\Model\User','friends','user_friends']`.
 
-![Cortex m:m self-ref](https://yuml.me/9467f355)
+![Cortex m:m self-ref](http://ikkez.de/linked/cortex-self-ref.png)
 
 Usually, this is a bidirectional relation, meaning that you would get a direct linkage to your friends (`friends`), and another one to the inverse linkage (friends with me, `friends_ref`). As this is pretty inconvenient for further working and filtering on those, both
 fields are linked together internally and will always represent **all** relations, whether the relation was added from UserA or UserB.
