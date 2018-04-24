@@ -1176,30 +1176,69 @@ class Cortex extends Cursor {
 			foreach($this->saveCsd as $key => $val) {
 				if($fields[$key]['relType'] == 'has-many') {
 					$relConf = $fields[$key]['has-many'];
-					$mmTable = $this->mmTable($relConf,$key);
-					$mm = $this->getRelInstance(null, array('db'=>$this->db, 'table'=>$mmTable));
-					$id = $this->get($relConf['localKey'],true);
-					$filter = [$relConf['relField'].' = ?',$id];
-					if ($relConf['isSelf']) {
-						$filter[0].= ' OR '.$relConf['relField'].'_ref = ?';
-						$filter[] = $id;
+					if ($relConf['hasRel'] == 'has-many') {
+						$mmTable = $this->mmTable($relConf,$key);
+						$mm = $this->getRelInstance(null, array('db'=>$this->db, 'table'=>$mmTable));
+						$id = $this->get($relConf['localKey'],true);
+						$filter = [$relConf['relField'].' = ?',$id];
+						if ($relConf['isSelf']) {
+							$filter[0].= ' OR '.$relConf['relField'].'_ref = ?';
+							$filter[] = $id;
+						}
+						// delete all refs
+						if (is_null($val))
+							$mm->erase($filter);
+						// update refs
+						elseif (is_array($val)) {
+							$mm->erase($filter);
+							foreach($val as $v) {
+								if ($relConf['isSelf'] && $v==$id)
+									continue;
+								$mm->set($key,$v);
+								$mm->set($relConf['relField'].($relConf['isSelf']?'_ref':''),$id);
+								$mm->save();
+								$mm->reset();
+							}
+						}
+						unset($mm);
 					}
-					// delete all refs
-					if (is_null($val))
-						$mm->erase($filter);
-					// update refs
-					elseif (is_array($val)) {
-						$mm->erase($filter);
-						foreach($val as $v) {
-							if ($relConf['isSelf'] && $v==$id)
-								continue;
-							$mm->set($key,$v);
-							$mm->set($relConf['relField'].($relConf['isSelf']?'_ref':''),$id);
-							$mm->save();
-							$mm->reset();
+					elseif($relConf['hasRel'] == 'belongs-to-one') {
+						$rel = $this->getRelInstance($relConf[0],$relConf,$key);
+						// find existing relations
+						$refs = $rel->find([$relConf[1].' = ?',$this->getRaw($relConf['relField'])]);
+						if (is_null($val)) {
+							foreach ($refs?:[] as $model) {
+								$model->set($relConf[1],NULL);
+								$model->save();
+							}
+							$this->fieldsCache[$key] = NULL;
+						} else {
+							if ($refs) {
+								$ref_ids = $refs->getAll('_id');
+								// unlink removed relations
+								$remove_refs = array_diff($ref_ids,$val);
+								foreach ($refs as $model)
+									if (in_array($model->getRaw($relConf['relField']),$remove_refs)) {
+										$model->set($relConf[1],null);
+										$model->save();
+									}
+								// get new relation keys
+								$val = array_diff($val,$ref_ids);
+							} else
+								$refs = new CortexCollection();
+							if (!empty($val)) {
+								// find models that need to be linked
+								$new_refs = $rel->find([$relConf['relField'].' IN ?',$val]);
+								foreach ($new_refs?:[] as $model) {
+									// set relation to new models
+									$model->set($relConf[1],$this->getRaw($relConf['relField']));
+									$model->save();
+									$refs->add($model);
+								}
+							}
+							$this->fieldsCache[$key] = $refs;
 						}
 					}
-					unset($mm);
 				} elseif($fields[$key]['relType'] == 'has-one') {
 					$val->save();
 				}
@@ -1421,18 +1460,19 @@ class Cortex extends Cursor {
 				$val = $this->getForeignKeysArray($val, $rel_field, $key);
 			}
 			elseif (isset($fields[$key]['has-many'])) {
-				// many-to-many, bidirectional
 				$relConf = $fields[$key]['has-many'];
-				if ($relConf['hasRel'] == 'has-many') {
+				// many-to-many, bidirectional
+				// many-to-one, inverse
+				if ($relConf['hasRel'] == 'has-many'
+					|| $relConf['hasRel'] == 'belongs-to-one') {
 					// custom setter
 					$val = $this->emit('set_'.$key, $val);
 					$val = $this->getForeignKeysArray($val,'_id',$key);
+					if (empty($val) && is_array($val))
+						$val=new CortexCollection();
 					$this->saveCsd[$key] = $val; // array of keys
 					$this->fieldsCache[$key] = $val;
 					return $val;
-				} elseif ($relConf['hasRel'] == 'belongs-to-one') {
-					// TODO: many-to-one, bidirectional, inverse way
-					trigger_error("not implemented",E_USER_ERROR);
 				}
 			}
 			// convert array content

@@ -321,9 +321,8 @@ class Test_Filter {
 		$author = new AuthorModel();
 		$author->has('friends.news', ['title LIKE ?','%Interface%']);
 		$res = $author->find();
-		$ids = $res->getAll('_id');
 		$test->expect(
-			$res && count($res) == 2 &&
+			$res && ($ids = $res->getAll('_id')) && count($res) == 2 &&
 			in_array($authorIDs[0],$ids) && in_array($authorIDs[2],$ids),
 			$type.': has-filter, nested on self-ref relation'
 		);

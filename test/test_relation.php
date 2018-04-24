@@ -282,6 +282,41 @@ class Test_Relation {
 			$type.': has-many inverse relation'
 		);
 
+		$author->news[] = $news_id[1];
+		$author->save();
+		$author->reset();
+		$author->load(array($author_pk.' = ?', $author_id[0]));
+		$result = $this->getResult($author->news);
+		$test->expect(
+			count($result)==2 &&
+			$result[0]['title'] == "Responsive Images" &&
+			$result[1]['title'] == "CSS3 Showcase",
+			$type.': has-many add relation, inverse ways'
+		);
+
+		$author->news = [$news_id[1]];
+		$author->save();
+		$author->reset();
+		$author->load(array($author_pk.' = ?', $author_id[0]));
+		$result = $this->getResult($author->news);
+		$test->expect(
+			$result[0]['title'] == "CSS3 Showcase",
+			$type.': has-many remove relation, inverse ways'
+		);
+
+		$author->news = null;
+		$author->save();
+		$author->reset();
+		$author->load(array($author_pk.' = ?', $author_id[0]));
+		$result = $this->getResult($author->news);
+		$test->expect(
+			empty($result),
+			$type.': has-many clear relation, inverse ways'
+		);
+		$author->news = [$news_id[0]];
+		$author->save();
+		$author->reset();
+
 		// many to many relation
 		///////////////////////////////////
 
