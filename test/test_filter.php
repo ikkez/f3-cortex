@@ -25,7 +25,7 @@ class Test_Filter {
 		$tag_pk = (is_int(strpos($type,'sql'))?$tc['primary']:'_id');
 
 		$authorIDs = $author->find()->getAll('_id');
-		$all = $news->find();
+		$all = $news->find(null,['order'=>'id']);
 		$newsIDs = $all->getAll('_id');
 		$profileIDs = $profile->find()->getAll('_id');
 		$tagIDs = $tag->find()->getAll('_id');

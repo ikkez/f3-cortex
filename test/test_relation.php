@@ -379,9 +379,10 @@ class Test_Relation {
 		);
 
 		$news->load(array($news_pk.' = ?', $news_id[0]));
-		$all = $news->find();
+		$all = $news->find(null,['order'=>'title']);
+
 		$test->expect(
-			$all[1]->tags2 === NULL
+			$all[0]->tags2 === NULL
 			&& $all[2]->author === NULL,
 			$type.': empty relations are NULL'
 		);
