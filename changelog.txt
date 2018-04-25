@@ -1,5 +1,21 @@
 CHANGELOG - Cortex ORM
 
+1.5.1 (25.04.2018)
+*	new: Cortex->getMapper to access the raw mapper
+*	added has-many <> belongs-to-one inverse save handler, which was not implemented before
+*	clear virtual fields on reset
+*	improved mongodb support
+*	apply auto-quoting to order statement, if not already quoted, #60
+*	reset internal schema cache upon setup
+*	fix Jig sorting issue on camelCase fields
+*	fix unit test for php7.2
+*	fix field matching for jig filter
+*	fix changed field check for `_id` field
+*	fix custom primary key with m:m relation usage, #56
+*	fix issue with certain whitespace in filters for mongodb
+*	fix countRel mm-table quotation
+*	fix jig order issue on count
+
 1.5.0 (30.06.2017)
 *	F3 3.6.2 compatibility fixes
 *	new: Collection->contains method
