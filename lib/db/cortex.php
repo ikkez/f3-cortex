@@ -18,7 +18,7 @@
  *  https://github.com/ikkez/F3-Sugar/
  *
  *  @package DB
- *  @version 1.5.1
+ *  @version 1.6.0-dev
  *  @date 25.04.2018
  *  @since 24.04.2012
  */
@@ -1475,14 +1475,6 @@ class Cortex extends Cursor {
 					return $val;
 				}
 			}
-			// convert array content
-			if (is_array($val) && $this->dbsType == 'sql')
-				if ($fields[$key]['type'] == self::DT_SERIALIZED)
-					$val = serialize($val);
-				elseif ($fields[$key]['type'] == self::DT_JSON)
-					$val = json_encode($val);
-				else
-					trigger_error(sprintf(self::E_ARRAY_DATATYPE, $key),E_USER_ERROR);
 			// add nullable polyfill
 			if ($val === NULL && ($this->dbsType == 'jig' || $this->dbsType == 'mongo')
 				&& array_key_exists('nullable', $fields[$key]) && $fields[$key]['nullable'] === false)
@@ -1496,11 +1488,26 @@ class Cortex extends Cursor {
 					&& !isset($fields[$key]['relType']))
 					$val = (int) $val;
 			}
+			// cast boolean
 			if (preg_match('/BOOL/i',$fields[$key]['type'])) {
 				$val = !$val || $val==='false' ? false : (bool) $val;
 				if ($this->dbsType == 'sql')
 					$val = (int) $val;
 			}
+			// custom setter
+			$val = $this->emit('set_'.$key, $val);
+			// convert array content
+			if (is_array($val) && $this->dbsType == 'sql') {
+				if ($fields[$key]['type']==self::DT_SERIALIZED)
+					$val=serialize($val);
+				elseif ($fields[$key]['type']==self::DT_JSON)
+					$val=json_encode($val);
+				else
+					trigger_error(sprintf(self::E_ARRAY_DATATYPE,$key),E_USER_ERROR);
+			}
+		} else {
+			// custom setter
+			$val = $this->emit('set_'.$key, $val);
 		}
 		// fluid SQL
 		if ($this->fluid && $this->dbsType == 'sql') {
@@ -1530,8 +1537,6 @@ class Cortex extends Cursor {
 				$this->mapper->schema($fields);
 			}
 		}
-		// custom setter
-		$val = $this->emit('set_'.$key, $val);
 		return $this->mapper->set($key, $val);
 	}
 
