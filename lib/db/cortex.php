@@ -725,7 +725,15 @@ class Cortex extends Cursor {
 							}
 							elseif ($result = $this->_hasRefsInMM($key,$has_filter,$has_options,$ttl))
 								$addToFilter = array($id.' IN ?', $result);
-						} // *-to-one
+						}
+						// *-to-one
+						elseif ($this->dbsType == 'sql') {
+							// use sub-query inclusion
+							$has_filter=$this->mergeFilter([$has_filter,
+								[$this->rel($key)->getTable().'.'.$fromConf[1].'='.$this->getTable().'.'.$id]]);
+							$result = $this->_refSubQuery($key,$has_filter,$has_options);
+							$addToFilter = ['exists('.$result[0].')']+$result[1];
+						}
 						elseif ($result = $this->_hasRefsIn($key,$has_filter,$has_options,$ttl))
 							$addToFilter = array($id.' IN ?', $result);
 						break;
@@ -922,6 +930,22 @@ class Cortex extends Cursor {
 			return false;
 		$hasSetByRelId = array_unique($hasSet->getAll($fieldConf[1], true));
 		return empty($hasSetByRelId) ? false : $hasSetByRelId;
+	}
+
+	/**
+	 * build sub query on relation
+	 * @param $key
+	 * @param $filter
+	 * @param $options
+	 * @return mixed
+	 */
+	protected function _refSubQuery($key, $filter, $options,$fields=null) {
+		$type = $this->fieldConf[$key]['relType'];
+		$fieldConf = $this->fieldConf[$key][$type];
+		$rel = $this->getRelFromConf($fieldConf,$key);
+		$filter[0]=$this->queryParser->sql_quoteCondition($filter[0],$this->db);
+		return $rel->mapper->stringify(implode(',',array_map([$this->db,'quotekey'],
+			$fields?:[$rel->primary])),$filter,$options);
 	}
 
 	/**
@@ -2409,18 +2433,19 @@ class CortexQueryParser extends \Prefab {
 		// https://www.debuggex.com/r/6AXwJ1Y3Aac8aocQ/3
 		// https://regex101.com/r/yM5vK4/1
 		// this took me lots of sleepless nights
-		return preg_replace_callback('/'.
-			'(\w+\((?:[^)(]+|(?R))*\))|'. // exclude SQL function names "foo("
+		$out = preg_replace_callback('/'.
+			'\w+\((?:(?>[^()]+)|\((?:(?>[^()]+)|^(?R))*\))*\)|'. // exclude SQL function names "foo("
 			'(?:(\b(?<!:)'. // exclude bind parameter ":foo"
 				'[a-zA-Z_](?:[\w\-_.]+\.?))'. // match only identifier, exclude values
 			'(?=[\s<>=!)]|$))/i', // only when part of condition or within brackets
 			function($match) use($db) {
-				if (!isset($match[2]))
+				if (!isset($match[1]))
+					return $match[0];
+				if (preg_match('/\b(AND|OR|IN|LIKE|NOT)\b/i',$match[1]))
 					return $match[1];
-				if (preg_match('/\b(AND|OR|IN|LIKE|NOT)\b/i',$match[2]))
-					return $match[2];
-				return $db->quotekey($match[2]);
+				return $db->quotekey($match[1]);
 			}, $cond);
+		return $out ?: $cond;
 	}
 
 	/**
@@ -2430,8 +2455,8 @@ class CortexQueryParser extends \Prefab {
 	 * @return string
 	 */
 	public function sql_prependTableToFields($cond, $table) {
-		return preg_replace_callback('/'.
-			'(\w+\((?:[^)(]+|(?R))*\))|'.
+		$out = preg_replace_callback('/'.
+			'(\w+\((?:[^)(]+|\((?:[^)(]+|(?R))*\))*\))|'.
 			'(?:(\s)|^|(?<=[(]))'.
 			'([a-zA-Z_](?:[\w\-_]+))'.
 			'(?=[\s<>=!)]|$)/i',
@@ -2442,6 +2467,7 @@ class CortexQueryParser extends \Prefab {
 					return $match[0];
 				return $match[2].$table.'.'.$match[3];
 			}, $cond);
+		return $out ?: $cond;
 	}
 
 	/**
