@@ -1693,14 +1693,14 @@ class Cortex extends Cursor {
 				// one-to-*, bidirectional, inverse way
 				if ($relType == 'belongs-to-one') {
 					$toConf = $relFieldConf[$fromConf[1]]['belongs-to-one'];
-					if(!is_array($toConf))
+					if (!is_array($toConf))
 						$toConf = array($toConf, $id);
 					if ($toConf[1] != $id && (!$this->exists($toConf[1])
 							|| is_null($this->mapper->get($toConf[1]))))
 						$this->fieldsCache[$key] = null;
-					elseif($cx = $this->getCollection()) {
+					elseif ($cx=$this->getCollection()) {
 						// part of a result set
-						if(!$cx->hasRelSet($key)) {
+						if (!$cx->hasRelSet($key)) {
 							// emit eager loading
 							$relKeys = $cx->getAll($toConf[1],true);
 							$crit = array($fromConf[1].' IN ?', $relKeys);
@@ -1711,14 +1711,16 @@ class Cortex extends Cursor {
 						$result = $cx->getSubset($key, array($this->get($toConf[1])));
 						$this->fieldsCache[$key] = $result ? (($type == 'has-one')
 							? $result[0][0] : CortexCollection::factory($result[0])) : NULL;
-					} else {
-						$crit = array($fromConf[1].' = ?', $this->get($toConf[1],true));
-						$crit = $this->mergeWithRelFilter($key, $crit);
-						$opt = $this->getRelFilterOption($key);
-						$this->fieldsCache[$key] = (($type == 'has-one')
-							? $rel->findone($crit,$opt,$this->_ttl)
-							: $rel->find($crit,$opt,$this->_ttl)) ?: NULL;
-					}
+					}	// no collection
+					elseif (($val=$this->getRaw($toConf[1])) && $val!==NULL) {
+						$crit=[$fromConf[1].' = ?',$val];
+						$crit=$this->mergeWithRelFilter($key,$crit);
+						$opt=$this->getRelFilterOption($key);
+						$this->fieldsCache[$key]=(($type=='has-one')
+							?$rel->findone($crit,$opt,$this->_ttl)
+							:$rel->find($crit,$opt,$this->_ttl))?:NULL;
+					} else
+						$this->fieldsCache[$key] = NULL;
 				}
 				// many-to-many, bidirectional
 				elseif ($relType == 'has-many') {
