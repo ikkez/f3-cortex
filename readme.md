@@ -209,7 +209,9 @@ class User extends \DB\Cortex {
             'nullable' => false,
         ),
         'mail' => array(
-            'type' => 'VARCHAR128'
+            'type' => 'VARCHAR128',
+            'index' => true,
+            'unique' => true,
         ),
         'website' => array(
             'type' => 'VARCHAR256'
@@ -221,14 +223,11 @@ class User extends \DB\Cortex {
     ),
     $db = 'DB',
     $table = 'users',
-    $fluid = true,      // triggers the SQL Fluid Mode, default: false
-    $primary = 'uid',   // name of the primary key (auto-created), default: id
-    $ttl = 120,         // caching time of field schema, default: 60
-    $rel_ttl = 30;      // caching time of all relations, default: 0
+    $primary = 'id',    // name of the primary key (auto-created), default: id
 }
 ```
 
-In the `$fieldConf` array, you can set data types (`type`), `nullable` flags and `default` values for your columns. Doing so enables you to install new Models into your SQL database, adds some nullable validation checks and the ability for defaults to the NoSQL engines (Jig and Mongo). This makes your models easy interchangeable along various databases using this loosely coupled field definitions. 
+In the `$fieldConf` array, you can set data types (`type`), `nullable` flags and `default` values for your columns. With `index` and `unique`, you can even setup an index for the columns. Doing so enables you to install new Models into your SQL database, adds some nullable validation checks and the ability for defaults to the NoSQL engines (Jig and Mongo). This makes your models easy interchangeable along various databases using this loosely coupled field definitions. 
 
 **You don't need to configure all fields this way.** If you are working on existing tables, the underlying SQL Mapper exposes the existing table schema. So if you don't need that install feature and your tables are already existing, then you can just skip the configuration for those fields, or just setup some of them (i.e. for fields with relations).
 
@@ -291,14 +290,16 @@ class User extends \DB\Cortex {
 And in your `usermodel.ini` file:
 
 ``` ini
-[globals]
-usermodel.table = users
-usermodel.fieldConf.name.type = VARCHAR256
-usermodel.fieldConf.name.nullable = FALSE
-usermodel.fieldConf.mail.type = VARCHAR128
-usermodel.fieldConf.website.type = VARCHAR256
-usermodel.fieldConf.rights_level.type = TINYINT
-usermodel.fieldConf.rights_level.default = 3
+[usermodel]
+table = users
+
+[usermodel.fieldConf]
+name.type = VARCHAR256
+name.nullable = FALSE
+mail.type = VARCHAR128
+website.type = VARCHAR256
+rights_level.type = TINYINT
+rights_level.default = 3
 ```
 
 #### Blacklist Fields
@@ -903,6 +904,8 @@ protected $fieldConf = array {
         'type' => string
         'nullable' => bool
         'default' => mixed
+        'index' => bool
+        'unique' => bool
     )
 };
 ```

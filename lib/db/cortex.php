@@ -120,7 +120,7 @@ class Cortex extends Cursor {
 		$this->ttl = $ttl ?: ($this->ttl ?: 60);
 		if (!$this->rel_ttl)
 			$this->rel_ttl = 0;
-		$this->_ttl = $this->rel_ttl ?: ($this->rel_ttl ?: 0);
+		$this->_ttl = $this->rel_ttl ?: 0;
 		if (static::$init == TRUE) return;
 		if ($this->fluid)
 			static::setup($this->db,$this->table,array());
