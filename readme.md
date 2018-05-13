@@ -912,6 +912,8 @@ protected $fieldConf = array {
 
 Get the whole list of possible types from the [Data Types Table](https://github.com/ikkez/f3-schema-builder/tree/master#column-class).
 
+*NB:* You can also add `'passThrough'=>true` in order to use the raw value in *type* as data type in case you need a custom type which is not available in the data types table. 
+ 
 ### $ttl
 **default mapper schema ttl**, int = 60
 
