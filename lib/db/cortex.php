@@ -1520,6 +1520,11 @@ class Cortex extends Cursor {
 			}
 			// custom setter
 			$val = $this->emit('set_'.$key, $val);
+			// clean datetime
+			if (isset($fields[$key]['type']) && empty($val) &&
+				in_array($fields[$key]['type'], [Schema::DT_DATE,Schema::DT_DATETIME])
+			)
+				$val=NULL;
 			// convert array content
 			if (is_array($val) && $this->dbsType == 'sql') {
 				if ($fields[$key]['type']==self::DT_SERIALIZED)
