@@ -2211,6 +2211,29 @@ class Cortex extends Cursor {
 	}
 
 	/**
+	 * return default values from schema configuration
+	 * @param bool $set set default values to mapper
+	 * @return array
+	 */
+	function defaults($set=false) {
+		$out = [];
+		$fields = $this->fieldConf;
+		if ($this->dbsType == 'sql')
+			$fields = array_replace_recursive($this->mapper->schema(),$fields);
+		foreach($fields as $field_key => $field_conf)
+			if (array_key_exists('default',$field_conf)) {
+				$val = ($field_conf['default'] === \DB\SQL\Schema::DF_CURRENT_TIMESTAMP)
+					? date('Y-m-d H:i:s') : $field_conf['default'];
+				if ($val!==NULL) {
+					$out[$field_key]=$val;
+					if ($set)
+						$this->set($field_key, $val);
+				}
+			}
+		return $out;
+	}
+
+	/**
 	 * check if a certain field exists in the mapper or
 	 * or is a virtual relation field
 	 * @param string $key
