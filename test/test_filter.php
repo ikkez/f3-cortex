@@ -27,12 +27,14 @@ class Test_Filter {
 		$authorIDs = $author->find()->getAll('_id');
 		$all = $news->find(null,['order'=>'id']);
 		$newsIDs = $all->getAll('_id');
+		sort($newsIDs);
 		$profileIDs = $profile->find()->getAll('_id');
 		$tagIDs = $tag->find()->getAll('_id');
 
 		// add another relation
 		$news->load(array('title = ?','CSS3 Showcase'));
-		$news->author = $author->load(array($author_pk.' = ?',$authorIDs[0]));
+		$author->load(array($author_pk.' = ?',$authorIDs[0]));
+		$news->author = $author;
 		$news->save();
 		$news->reset();
 		$author->reset();
@@ -292,7 +294,8 @@ class Test_Filter {
 
 
 		$author->reset();
-		$id = $author->load()->next()->_id;
+		$author->load();
+		$id = $author->next()->_id;
 		$tag->reset();
 		$tag->countRel('news');
 		$tag->has('news',array('author = ?',$id));
@@ -331,7 +334,7 @@ class Test_Filter {
 		$author->has('friends', ['name LIKE ?','%Scott%']);
 		$author->has('news', ['title LIKE ?','%CSS%']);
 		$res = $author->find();
-		$ids = $res->getAll('_id');
+		$ids = $res ? $res->getAll('_id') : [];
 		$test->expect(
 			$res && count($res) == 1 &&
 			in_array($authorIDs[0],$ids),

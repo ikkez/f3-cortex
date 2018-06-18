@@ -207,7 +207,8 @@ class Test_Relation {
 
 		$tag->reset();
 		$news->load(array($news_pk.' = ?', $news_id[1]));
-		$news->tags = $tag->load(array($tag_pk.' != ?',$tag_id[0]));
+		$tag->load(array($tag_pk.' != ?',$tag_id[0]));
+		$news->tags = $tag;
 		$news->save();
 		$news->reset();
 		$news->load(array($news_pk.' = ?', $news_id[1]));
@@ -241,7 +242,8 @@ class Test_Relation {
 		$profile_pk = (is_int(strpos($type,'sql'))?$pc['primary']:'_id');
 
 		$profile->message = 'Hello World';
-		$profile->author = $author->load(array($author_pk.' = ?',$author_id[0]));
+		$author->load(array($author_pk.' = ?',$author_id[0]));
+		$profile->author = $author;
 		$profile->save();
 		$profile_id = $profile->_id;
 		$profile->reset();
@@ -337,7 +339,8 @@ class Test_Relation {
 		);
 
 
-		$tag3 = $tag->load(array($tag_pk.' = ?',$tag_id[2]));
+		$tag->load(array($tag_pk.' = ?',$tag_id[2]));
+		$tag3 = $tag;
 		$news->tags2[] = $tag3;
 		$news->save();
 		$a=count($news->tags2);

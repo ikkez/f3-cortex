@@ -190,7 +190,8 @@ class Cortex extends Cursor {
 		$fields = array_unique($fields);
 		$schema = $this->whitelist ?: $this->mapper->fields();
 		if (!$schema && $this->dbsType != 'sql' && $this->dry()) {
-			$schema = $this->load()->mapper->fields();
+			$this->load();
+			$schema = $this->mapper->fields();
 			$this->reset();
 		}
 		// include relation linkage fields to $fields (if $fields is a whitelist)
@@ -872,7 +873,7 @@ class Cortex extends Cursor {
 	 * @param null  $filter
 	 * @param array $options
 	 * @param int   $ttl
-	 * @return Cortex
+	 * @return bool
 	 */
 	public function load($filter = NULL, array $options = NULL, $ttl = 0) {
 		$this->reset();
@@ -884,7 +885,7 @@ class Cortex extends Cursor {
 		} else
 			$this->mapper->reset();
 		$this->emit('load');
-		return $this;
+		return $this->valid();
 	}
 
 	/**
