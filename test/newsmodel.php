@@ -11,6 +11,7 @@ class NewsModel extends \DB\Cortex {
 				'type' => \DB\SQL\Schema::DT_TEXT,
 			),
 			'author' => array(
+				'index'=>true,
 				'belongs-to-one' => '\AuthorModel',
 			),
 			'tags' => array(
