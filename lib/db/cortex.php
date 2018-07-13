@@ -1624,6 +1624,17 @@ class Cortex extends Cursor {
 	}
 
 	/**
+	 * reset virtual fields
+	 * @param string $key
+	 */
+	public function clearVirtual($key=NULL) {
+		if ($key)
+			unset($this->vFields[$key]);
+		else
+			$this->vFields=[];
+	}
+
+	/**
 	 * Retrieve contents of key
 	 * @return mixed
 	 * @param string $key
@@ -2198,7 +2209,6 @@ class Cortex extends Cursor {
 		$this->saveCsd=[];
 		$this->countFields=[];
 		$this->preBinds=[];
-		$this->vFields=[];
 		$this->grp_stack=null;
 		// set default values
 		if (($this->dbsType == 'jig' || $this->dbsType == 'mongo')
