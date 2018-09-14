@@ -483,8 +483,6 @@ class Cortex extends Cursor {
 			list($fclass, $pfkey) = $fConf;
 			$self = get_called_class();
 			// check for a matching config
-			if (!is_int(strpos($fclass, $self)))
-				trigger_error(sprintf(self::E_MM_REL_CLASS, $fclass, $self),E_USER_ERROR);
 			if ($pfkey != $pkey)
 				trigger_error(sprintf(self::E_MM_REL_FIELD,
 					$fclass.'.'.$pfkey, $self.'.'.$pkey),E_USER_ERROR);
