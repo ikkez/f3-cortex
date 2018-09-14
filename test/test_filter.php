@@ -39,6 +39,18 @@ class Test_Filter {
 		$news->reset();
 		$author->reset();
 
+		$page=$news->paginate(0,2,null,['order'=>'title DESC']);
+		$test->expect(
+			$page['subset'][0]->get('title')=='Touchable Interfaces' &&
+			$page['subset'][1]->get('title')=='Responsive Images',
+			$type.': pagination: first page'
+		);
+		$page=$news->paginate(1,2,null,['order'=>'title DESC']);
+		$test->expect(
+			$page['subset'][0]->get('title')=='CSS3 Showcase',
+			$type.': pagination: last page'
+		);
+
 		// has-filter on belongs-to relation
 		///////////////////////////////////
 		$result = $author->has('news', array('title like ?', '%Image%'))->afind();
