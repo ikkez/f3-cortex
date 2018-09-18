@@ -100,7 +100,8 @@ class Cortex extends Cursor {
 	public function __construct($db = NULL, $table = NULL, $fluid = NULL, $ttl = 0) {
 		if (!is_null($fluid))
 			$this->fluid = $fluid;
-		if (!is_object($this->db=(is_string($db=($db?:$this->db))?\Base::instance()->get($db):$db)))
+		if (!is_object($this->db=(is_string($db=($db?:$this->db))
+				? \Base::instance()->get($db):$db)) && !static::$init)
 			trigger_error(self::E_CONNECTION,E_USER_ERROR);
 		if ($this->db instanceof Jig)
 			$this->dbsType = 'jig';
