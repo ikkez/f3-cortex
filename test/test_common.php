@@ -27,6 +27,19 @@ class Test_Common {
 			'copyto: raw record copied to hive'
 		);
 
+		$news->copyto_flat('news');
+
+		$author = new AuthorModel();
+		$author->load();
+		$author->copyto_flat('author');
+		$test->expect(
+			is_array($f3->news['tags']) &&
+			is_int($f3->news['tags'][0]) &&
+			is_array($f3->author['news']) &&
+			is_int($f3->author['news'][0]),
+			'copyto_flat: record copied to hive with relations being flat arrays of IDs'
+		);
+
 		$news->reset();
 
 		$news->copyfrom('record1');

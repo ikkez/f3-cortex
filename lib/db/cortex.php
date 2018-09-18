@@ -2176,6 +2176,29 @@ class Cortex extends Cursor {
 		\Base::instance()->set($key, $this->cast(null,$relDepth));
 	}
 
+	/**
+	 * copy to hive key with relations being simple arrays of keys
+	 * @param $key
+	 */
+	function copyto_flat($key) {
+		/** @var \Base $f3 */
+		$f3 = \Base::instance();
+		$this->copyto($key);
+		foreach ($this->fields() as $field) {
+			if (isset($this->fieldConf[$field]) && isset($this->fieldConf[$field]['relType'])
+				&& $this->fieldConf[$field]['relType']=='has-many'
+				&& $f3->devoid($key.'.'.$field)) {
+				$val = $this->get($field);
+				if ($val instanceof CortexCollection)
+					$f3->set($key.'.'.$field,$val->getAll('id'));
+				elseif (is_array($val))
+					$f3->set($key.'.'.$field,$val);
+				else
+					$f3->clear($key.'.'.$field);
+			}
+		}
+	}
+
 	public function skip($ofs = 1) {
 		$this->reset(false);
 		if ($this->mapper->skip($ofs))
