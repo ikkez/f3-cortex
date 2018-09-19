@@ -775,30 +775,48 @@ class Cortex extends Cursor {
 			if (isset($options['order']) && $this->db->driver() == 'pgsql')
 				// PostgreSQLism: sort NULL values to the end of a table
 				$options['order'] = preg_replace('/\h+DESC(?=\s*(?:$|,))/i',' DESC NULLS LAST',$options['order']);
+			// assemble full sql query for joined queries
 			if ($hasJoin) {
-				// assemble full sql query
-				$adhoc='';
-				if ($count)
-					$sql = 'SELECT COUNT(*) AS '.$this->db->quotekey('rows').' FROM '.$qtable;
-				else {
+				// when in count-mode and grouping is active, wrap the query later
+				// otherwise add a an adhoc counter field here
+				if (!($subquery_mode=($options && !empty($options['group']))) && $count)
+					$this->adhoc['_rows']=['expr'=>'COUNT(*)','value'=>NULL];
+				$adhoc=[];
+				if (!$count)
+					// add bind parameters for filters in adhoc fields
 					if ($this->preBinds) {
 						$crit = array_shift($filter);
 						$filter = array_merge($this->preBinds,$filter);
 						array_unshift($filter,$crit);
 					}
-					if (!empty($m_refl_adhoc))
-						foreach ($m_refl_adhoc as $key=>$val)
-							$adhoc.=', '.$val['expr'].' AS '.$this->db->quotekey($key);
-					$sql = 'SELECT '.$qtable.'.*'.$adhoc.' FROM '.$qtable;
+				if (!empty($m_refl_adhoc))
+					// add adhoc field expressions
+					foreach ($m_refl_adhoc as $key=>$val)
+						$adhoc[]=$val['expr'].' AS '.$this->db->quotekey($key);
+				$fields=implode(',',$adhoc);
+				if ($count && $subquery_mode) {
+					if (empty($fields))
+						// Select at least one field, ideally the grouping fields or sqlsrv fails
+						$fields=preg_replace('/HAVING.+$/i','',$options['group']);
+					if (preg_match('/mssql|dblib|sqlsrv/',$this->engine))
+						$fields='TOP 100 PERCENT '.$fields;
 				}
-				$sql .= ' '.implode(' ',$hasJoin).' WHERE '.$filter[0];
+				if (!$count)
+					// add only selected fields to field list
+					$fields.=($fields?', ':'').implode(', ',array_map(function($field) use($qtable){
+						return $qtable.'.'.$this->db->quotekey($field);
+					},array_diff($this->mapper->fields(),array_keys($m_refl_adhoc))));
+				// assemble query
+				$sql = 'SELECT '.$fields.' FROM '.$qtable.' '
+					.implode(' ',$hasJoin).' WHERE '.$filter[0];
+				$db=$this->db;
+				// add grouping in both, count & selection mode
+				if (isset($options['group']))
+					$sql.=' GROUP BY '.preg_replace_callback('/\w+[._\-\w]*/i',
+						function($match) use($db) {
+							return $db->quotekey($match[0]);
+						}, $options['group']);
 				if (!$count) {
-					$db=$this->db;
-					if (isset($options['group']))
-						$sql.=' GROUP BY '.preg_replace_callback('/\w+[._\-\w]*/i',
-							function($match) use($db) {
-								return $db->quotekey($match[0]);
-							}, $options['group']);
 					if (isset($options['order']))
 						$sql.=' ORDER BY '.implode(',',array_map(
 							function($str) use($db) {
@@ -808,12 +826,13 @@ class Cortex extends Cursor {
 										(isset($parts[2])?(' '.$parts[2]):'')):$str;
 							},
 							explode(',',$options['order'])));
+					// SQL Server fixes
 					if (preg_match('/mssql|sqlsrv|odbc/', $this->db->driver()) &&
 						(isset($options['limit']) || isset($options['offset']))) {
 						$ofs=isset($options['offset'])?(int)$options['offset']:0;
 						$lmt=isset($options['limit'])?(int)$options['limit']:0;
 						if (strncmp($this->db->version(),'11',2)>=0) {
-							// SQL Server 2012
+							// SQL Server >= 2012
 							if (!isset($options['order']))
 								$sql.=' ORDER BY '.$this->db->quotekey($this->primary);
 							$sql.=' OFFSET '.$ofs.' ROWS'.($lmt?' FETCH NEXT '.$lmt.' ROWS ONLY':'');
@@ -831,11 +850,14 @@ class Cortex extends Cursor {
 						if (isset($options['offset']))
 							$sql.=' OFFSET '.(int)$options['offset'];
 					}
-				}
+				} elseif ($subquery_mode)
+					// wrap count query if necessary
+					$sql='SELECT COUNT(*) AS '.$this->db->quotekey('_rows').' '.
+						'FROM ('.$sql.') AS '.$this->db->quotekey('_temp');
 				unset($filter[0]);
 				$result = $this->db->exec($sql, $filter, $ttl);
 				if ($count)
-					return $result[0]['rows'];
+					return $result[0]['_rows'];
 				foreach ($result as &$record) {
 					// factory new mappers
 					$mapper = clone($this->mapper);
