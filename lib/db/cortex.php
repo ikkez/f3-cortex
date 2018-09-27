@@ -714,9 +714,13 @@ class Cortex extends Cursor {
 								&& !isset($has_options['limit']) && !isset($has_options['offset'])) {
 								$hasJoin = array_merge($hasJoin,
 									$this->_hasJoinMM_sql($key,$hasCond,$filter,$options));
-								$options['group'] = (isset($options['group'])?$options['group'].',':'').
-									$this->table.'.'.$this->primary;
+								if (!isset($options['group']))
+									$options['group'] = '';
 								$groupFields = explode(',', preg_replace('/"/','',$options['group']));
+								if (!in_array($this->table.'.'.$this->primary,$groupFields)) {
+									$options['group'] = ($options['group']?',':'').$this->table.'.'.$this->primary;
+									$groupFields[]=$this->table.'.'.$this->primary;
+								}
 								// all non-aggregated fields need to be present in the GROUP BY clause
 								if (isset($m_refl_adhoc) && preg_match('/sybase|dblib|odbc|sqlsrv/i',$this->db->driver()))
 									foreach (array_diff($this->mapper->fields(),array_keys($m_refl_adhoc)) as $field)
