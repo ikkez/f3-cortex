@@ -2598,7 +2598,9 @@ class CortexQueryParser extends \Prefab {
 				}
 				elseif($val===null && preg_match('/(\w+)\s*([!=<>]+)\s*\?/i',$part,$nmatch)
 					&& ($nmatch[2]=='=' || $nmatch[2]=='==')){
-					$part = '(!array_key_exists(\''.ltrim($nmatch[1],'@').'\',$_row))';
+					$kval=ltrim($nmatch[1],'@');
+					$part = '(!array_key_exists(\''.$kval.'\',$_row) || '.
+						'(array_key_exists(\''.$kval.'\',$_row) && $_row[\''.$kval.'\']===NULL))';
 					unset($part);
 					continue;
 				}
