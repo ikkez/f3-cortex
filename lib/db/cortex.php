@@ -2223,7 +2223,7 @@ class Cortex extends Cursor {
 				&& $f3->devoid($key.'.'.$field)) {
 				$val = $this->get($field);
 				if ($val instanceof CortexCollection)
-					$f3->set($key.'.'.$field,$val->getAll('id'));
+					$f3->set($key.'.'.$field,$val->getAll('_id'));
 				elseif (is_array($val))
 					$f3->set($key.'.'.$field,$val);
 				else

@@ -934,7 +934,7 @@ Defines the used primary key of the table. Default is `id` for SQL engine, and *
 **Retrieve first object that satisfies criteria**
 
 ```php
-Cortex load([ array $filter = NULL [, array $options = NULL [, int $ttl = 0 ]]])
+bool load([ array $filter = NULL [, array $options = NULL [, int $ttl = 0 ]]])
 ```
 
 Simple sample to load a user:
@@ -950,7 +950,7 @@ if (!$user->dry()) {
 ```
 
 When called without any parameter, it loads the first record from the database.
-
+The method returns `TRUE` if the load action was successful.
 
 ### loaded
 **Count records that are currently loaded**
@@ -1199,6 +1199,15 @@ $news->copyfrom('POST',function($fields) {
 null copyto( string $key [, array|string $relDepth = 0 ])
 ```
 
+### copyto_flat
+**Copy mapper values to hive key with relations being simple arrays of keys**
+
+```php
+null copyto_flat( string $key )
+```
+
+All `has-many` relations are being returned as simple array lists of their primary keys.
+
 
 ### count
 **Count records that match criteria**
@@ -1238,6 +1247,16 @@ string dbtype()
 ```
 
 The type is `SQL`, `Mongo` or `Jig`.
+
+
+### defaults
+**Return default values from schema configuration**
+
+```php
+array defaults([ bool $set = FALSE ])
+```
+
+Returns a `$key` => `$value` array of fields that has a default value different than `NULL`.
 
 ### dry
 **Return TRUE if current cursor position is not mapped to any record**
@@ -1472,6 +1491,14 @@ null reset([ bool $mapper = true ])
 
 If `$mapper` is *false*, it only reset filter, default values and internal caches of the mapper, but leaves the hydrates record untouched.
 
+### resetFields
+**reset only specific fields and return to their default values**
+
+```php
+null resetFields( array $fields )
+```
+
+If any field doesn't have a default value, it's reset to `NULL`.
 
 ### resolveConfiguration
 **kick start mapper to fetch its config**
