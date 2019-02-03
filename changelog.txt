@@ -1,5 +1,22 @@
 CHANGELOG - Cortex ORM
 
+1.6.0 (03.02.2019)
+*	new: defaults() method to get/set schema default values
+*	new: resetFields() method, to only reset specific fields back to defaults
+*	new: copyto_flat(), it's like copyto plus simplified exporting of relation IDs
+*	changed: return success state on load() instead of $this for better interoperability
+*	added optimized exists-strategy for has-filter, #58
+*	fix jig NULL compare on existing fields
+*	fix double pkey in group when multiple has filters are active
+*	fix error on self-reflection without DB, #67
+*	fix to avoid saving empty string date values
+*	fix loading of empty m:1 relation, #62
+*	optimize count behaviour & performance
+*	don't clear virtual fields automatically, fixes #64
+*	loosen class matching for relation configuration
+*	realign custom setter call before DT_JSON encoding, #49
+*	added DB uuid to schema cache key
+
 1.5.1 (25.04.2018)
 *	new: Cortex->getMapper to access the raw mapper
 *	added has-many <> belongs-to-one inverse save handler, which was not implemented before
