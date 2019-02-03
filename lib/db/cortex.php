@@ -1915,6 +1915,13 @@ class Cortex extends Cursor {
 			}
 		}
 		// fetch cached value, if existing
+		// TODO: fix array key reference editing, #71
+//		if (array_key_exists($key,$this->fieldsCache))
+//			$val = $this->fieldsCache[$key];
+//		elseif ($this->exists($key)) {
+//			$val =& $this->mapper->{$key};
+//		} else
+//			$val = NULL;
 		$val = array_key_exists($key,$this->fieldsCache) ? $this->fieldsCache[$key]
 			: (($this->exists($key)) ? $this->mapper->{$key} : null);
 		if ($this->dbsType == 'mongo' && (($this->db->legacy() && $val instanceof \MongoId) ||
@@ -2267,6 +2274,23 @@ class Cortex extends Cursor {
 						? date('Y-m-d H:i:s') : $field_conf['default'];
 					$this->set($field_key, $val);
 				}
+	}
+
+	/**
+	 * reset only specific fields and return to their default values
+	 * @param array $fields
+	 */
+	public function resetFields(array $fields) {
+		$defaults = $this->defaults();
+		foreach ($fields as $field) {
+			unset($this->fieldsCache[$field]);
+			unset($this->saveCsd[$field]);
+			if (isset($defaults[$field]))
+				$this->set($field,$defaults[$field]);
+			else {
+				$this->set($field,NULL);
+			}
+		}
 	}
 
 	/**
