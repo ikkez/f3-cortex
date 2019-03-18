@@ -731,7 +731,7 @@ class Cortex extends Cursor {
 								$addToFilter = array($id.' IN ?', $result);
 						}
 						// *-to-one
-						elseif ($this->dbsType == 'sql') {
+						elseif (!$deep && $this->dbsType == 'sql') {
 							// use sub-query inclusion
 							$has_filter=$this->mergeFilter([$has_filter,
 								[$this->rel($key)->getTable().'.'.$fromConf[1].'='.$this->getTable().'.'.$id]]);
