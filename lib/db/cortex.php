@@ -781,11 +781,11 @@ class Cortex extends Cursor {
 				$options['order'] = preg_replace('/\h+DESC(?=\s*(?:$|,))/i',' DESC NULLS LAST',$options['order']);
 			// assemble full sql query for joined queries
 			if ($hasJoin) {
+				$adhoc=[];
 				// when in count-mode and grouping is active, wrap the query later
 				// otherwise add a an adhoc counter field here
 				if (!($subquery_mode=($options && !empty($options['group']))) && $count)
-					$this->adhoc['_rows']=['expr'=>'COUNT(*)','value'=>NULL];
-				$adhoc=[];
+					$adhoc[]='(COUNT(*)) as _rows';
 				if (!$count)
 					// add bind parameters for filters in adhoc fields
 					if ($this->preBinds) {
