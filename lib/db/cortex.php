@@ -1224,7 +1224,7 @@ class Cortex extends Cursor {
 		// m:m save cascade
 		if (!empty($this->saveCsd)) {
 			foreach($this->saveCsd as $key => $val) {
-				if($fields[$key]['relType'] == 'has-many') {
+				if ($fields[$key]['relType'] == 'has-many') {
 					$relConf = $fields[$key]['has-many'];
 					if ($relConf['hasRel'] == 'has-many') {
 						$mmTable = $this->mmTable($relConf,$key);
@@ -1236,7 +1236,7 @@ class Cortex extends Cursor {
 							$filter[] = $id;
 						}
 						// delete all refs
-						if (is_null($val))
+						if (empty($val))
 							$mm->erase($filter);
 						// update refs
 						elseif (is_array($val)) {
@@ -1256,7 +1256,7 @@ class Cortex extends Cursor {
 						$rel = $this->getRelInstance($relConf[0],$relConf,$key);
 						// find existing relations
 						$refs = $rel->find([$relConf[1].' = ?',$this->getRaw($relConf['relField'])]);
-						if (is_null($val)) {
+						if (empty($val)) {
 							foreach ($refs?:[] as $model) {
 								$model->set($relConf[1],NULL);
 								$model->save();
@@ -1470,7 +1470,7 @@ class Cortex extends Cursor {
 			// handle relations
 			if (isset($fields[$key]['belongs-to-one'])) {
 				// one-to-many, one-to-one
-				if (is_null($val))
+				if (empty($val))
 					$val = NULL;
 				elseif (is_object($val) &&
 					!($this->dbsType=='mongo' && (
@@ -1489,7 +1489,7 @@ class Cortex extends Cursor {
 					$val = $this->db->legacy() ? new \MongoId($val) : new \MongoDB\BSON\ObjectId($val);
 			} elseif (isset($fields[$key]['has-one'])){
 				$relConf = $fields[$key]['has-one'];
-				if (is_null($val)) {
+				if (empty($val)) {
 					$val = $this->get($key);
 					$val->set($relConf[1],NULL);
 				} else {
