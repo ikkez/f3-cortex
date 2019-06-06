@@ -494,19 +494,21 @@ When both models of a relation has a `has-many` configuration on their linkage f
 To save many collections to a model you've got several ways:
 
 ``` php
-$news->load(array('_id = ?',1));
+$news->load(['_id = ?',1]);
 
 // array of IDs from TagModel
-$news->tags = array(12, 5);
+$news->tags = [12, 5];
 // OR a split-able string
 $news->tags = '12;5;3;9'; // delimiter: [,;|]
 // OR an array of single mapper objects
-$news->tags = array($tag,$tag2,$tag3);
+$news->tags = [$tag,$tag2,$tag3];
 // OR a hydrated mapper that may contain multiple results
-$news->tags = $tag->load(array('_id != ?',42));
+$tag->load(['_id != ?',42]);
+$news->tags = $tag;
 
 // you can also add a single tag to your existing tags
-$news->tags[] = $tag->load(array('_id = ?',23));
+$tag->load(['_id = ?',23]);
+$news->tags[] = $tag;
 
 $news->save();
 ```
