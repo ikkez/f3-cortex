@@ -1241,7 +1241,7 @@ class Cortex extends Cursor {
 						// update refs
 						elseif (is_array($val)) {
 							$mm->erase($filter);
-							foreach($val as $v) {
+							foreach(array_unique($val) as $v) {
 								if ($relConf['isSelf'] && $v==$id)
 									continue;
 								$mm->set($key,$v);
