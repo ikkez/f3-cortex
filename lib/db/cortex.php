@@ -736,7 +736,7 @@ class Cortex extends Cursor {
 							$has_filter=$this->mergeFilter([$has_filter,
 								[$this->rel($key)->getTable().'.'.$fromConf[1].'='.$this->getTable().'.'.$id]]);
 							$result = $this->_refSubQuery($key,$has_filter,$has_options);
-							$addToFilter = ['exists('.$result[0].')']+$result[1];
+							$addToFilter = array_merge(['exists('.$result[0].')'],$result[1]);
 						}
 						elseif ($result = $this->_hasRefsIn($key,$has_filter,$has_options,$ttl))
 							$addToFilter = array($id.' IN ?', $result);
