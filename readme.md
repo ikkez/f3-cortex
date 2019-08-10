@@ -1696,7 +1696,7 @@ NB: This is just a comparison - it actually does not update any of the collectio
 **check if the collection contains a record with the given key-val set**
 
 ```php
-array contains( mixed|Cortex $val [, string $key = '_id' ])
+bool contains( mixed|Cortex $val [, string $key = '_id' ])
 ```
 
 This method can come handy to check if a collections contains a given record, or has a record with a given value:
