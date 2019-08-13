@@ -1215,7 +1215,7 @@ All `has-many` relations are being returned as simple array lists of their prima
 **Count records that match criteria**
 
 ```php
-null count([ null $filter [, int $ttl = 60 ]])
+null count([ null $filter [, array $options = NULL [, int $ttl = 60 ]]])
 ```
 
 Just like `find()` but it only executes a count query instead of the real select.
