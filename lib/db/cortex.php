@@ -621,7 +621,7 @@ class Cortex extends Cursor {
 		$this->_ttl=$ttl?:$this->rel_ttl;
 		$result = $this->filteredFind($filter,$options,$ttl);
 		if (empty($result))
-			return false;
+			return new CortexCollection();
 		foreach($result as &$record) {
 			$record = $this->factory($record);
 			unset($record);

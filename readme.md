@@ -1085,7 +1085,7 @@ array|null castField( string $key [, int $rel_depths = 0 ])
 **Return a collection of objects matching criteria**
 
 ```php
-CortexCollection|false find([ array $filter = NULL [, array $options = NULL [, int $ttl = 0 ]]])
+CortexCollection find([ array $filter = NULL [, array $options = NULL [, int $ttl = 0 ]]])
 ```
 
 The resulting CortexCollection implements the ArrayIterator and can be treated like a usual array. All filters and counters which were set before are used once `find` is called:
