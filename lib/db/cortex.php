@@ -595,7 +595,7 @@ class Cortex extends Cursor {
 	 * @param array|null $filter
 	 * @param array|null $options
 	 * @param int        $ttl
-	 * @return CortexCollection
+	 * @return CortexCollection|false
 	 */
 	public function find($filter = NULL, array $options = NULL, $ttl = 0) {
 		$sort=false;
