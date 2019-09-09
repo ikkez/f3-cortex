@@ -213,7 +213,7 @@ class Cortex extends Cursor {
 		} else
 			$this->whitelist=$fields;
 		$id=$this->dbsType=='sql'?$this->primary:'_id';
-		if (!in_array($id,$this->whitelist))
+		if (!in_array($id,$this->whitelist) && !($exclude && in_array($id,$fields)))
 			$this->whitelist[]=$id;
 		$this->applyWhitelist();
 		return $this->whitelist;
