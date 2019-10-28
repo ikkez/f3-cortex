@@ -864,12 +864,7 @@ class Cortex extends Cursor {
 					return $result[0]['_rows'];
 				foreach ($result as &$record) {
 					// factory new mappers
-					$mapper = clone($this->mapper);
-					$mapper->reset();
-					$mapper->query= array($record);
-					foreach ($record as $key=>$val)
-						$mapper->set($key, $val);
-					$record = $mapper;
+					$record = $this->mapper->factory($record);
 					unset($record, $mapper);
 				}
 				return $result;
