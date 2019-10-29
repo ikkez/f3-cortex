@@ -868,7 +868,7 @@ class Cortex extends Cursor {
 					unset($record, $mapper);
 				}
 				return $result;
-			} elseif (!empty($this->preBinds)) {
+			} elseif (!empty($this->preBinds) && !$count) {
 				// bind values to adhoc queries
 				if (!$filter)
 					// we (PDO) need any filter to bind values
