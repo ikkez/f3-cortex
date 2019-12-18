@@ -1321,6 +1321,11 @@ class Cortex extends Cursor {
 	 * @param $key
 	 */
 	public function countRel($key, $alias=null, $filter=null, $option=null) {
+		if (strpos($key,'.')!==FALSE) {
+			list($relM,$relF) = explode('.',$key,2);
+			$this->rel($relM)->countRel($relF,$alias,$filter,$option);
+			return;
+		}
 		if (!$alias)
 			$alias = 'count_'.$key;
 		$filter_bak = null;
@@ -1879,7 +1884,7 @@ class Cortex extends Cursor {
 							if (!empty($relKeys)) {
 								$crit = array($relConf[1].' IN ?', array_unique($relKeys));
 								$relSet = $rel->find($this->mergeWithRelFilter($key, $crit),
-								$this->getRelFilterOption($key),$this->_ttl);
+									$this->getRelFilterOption($key),$this->_ttl);
 								// cache relSet, sorted by ID
 								$cx->setRelSet($key, $relSet ? $relSet->getBy($relConf[1]) : NULL);
 							} else
@@ -2002,7 +2007,8 @@ class Cortex extends Cursor {
 			'\\'.$relConf['table'].'\\'.$key;
 		if (\Registry::exists($relName)) {
 			$rel = \Registry::get($relName);
-			$rel->reset();
+			// use pre-configured relation object here and dont reset it
+			//$rel->reset();
 		} else {
 			$rel = $model ? new $model : new Cortex($relConf['db'], $relConf['table']);
 			if (!$rel instanceof Cortex)
