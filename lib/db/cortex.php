@@ -424,7 +424,7 @@ class Cortex extends Cursor {
 			$df = $self::resolveConfiguration();
 		if (!is_object($db=(is_string($db=($db?:$df['db']))?\Base::instance()->get($db):$db)))
 			trigger_error(self::E_CONNECTION,E_USER_ERROR);
-		if (strlen($table=strtolower($table?:$df['table']))==0)
+		if (strlen($table=($table?:$df['table']))==0)
 			trigger_error(self::E_NO_TABLE,E_USER_ERROR);
 		if (isset($df) && !empty($df['fieldConf']))
 			$fields = $df['fieldConf'];
