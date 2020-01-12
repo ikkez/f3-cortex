@@ -1438,19 +1438,21 @@ class Cortex extends Cursor {
 	/**
 	 * update a given date or time field with the current time
 	 * @param string $key
+	 * @param null $timestamp
 	 */
-	public function touch($key) {
+	public function touch($key, $timestamp=NULL) {
 		if (isset($this->fieldConf[$key])
 			&& isset($this->fieldConf[$key]['type'])) {
 			$type = $this->fieldConf[$key]['type'];
 			$date = ($this->dbsType=='sql' && preg_match('/mssql|sybase|dblib|odbc|sqlsrv/',
-				$this->db->driver())) ? 'Ymd' : 'Y-m-d';
+					$this->db->driver())) ? 'Ymd' : 'Y-m-d';
+			$timestamp = $timestamp ?: time();
 			if ($type == Schema::DT_DATETIME || $type == Schema::DT_TIMESTAMP)
-				$this->set($key,date($date.' H:i:s'));
+				$this->set($key,date($date.' H:i:s', $timestamp));
 			elseif ($type == Schema::DT_DATE)
-				$this->set($key,date($date));
+				$this->set($key,date($date, $timestamp));
 			elseif ($type == Schema::DT_INT4)
-				$this->set($key,time());
+				$this->set($key,$timestamp);
 		}
 	}
 
