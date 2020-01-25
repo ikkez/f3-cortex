@@ -1541,7 +1541,8 @@ class Cortex extends Cursor {
 					$val = (int) $val;
 			}
 			// cast boolean
-			if (preg_match('/BOOL/i',$fields[$key]['type'])) {
+			if (preg_match('/BOOL/i',$fields[$key]['type']) && !($val===NULL
+					&& isset($fields[$key]['nullable']) && $fields[$key]['nullable']==TRUE)) {
 				$val = !$val || $val==='false' ? false : (bool) $val;
 				if ($this->dbsType == 'sql')
 					$val = (int) $val;
@@ -1912,7 +1913,12 @@ class Cortex extends Cursor {
 						$this->fieldsCache[$key] = json_decode($this->mapper->{$key},true);
 				}
 				if ($this->exists($key) && preg_match('/BOOL/i',$fields[$key]['type'])) {
-					$this->fieldsCache[$key] = (bool) $this->mapper->{$key};
+					$field_val = $this->mapper->{$key};
+					if (isset($fields[$key]['nullable']) && $fields[$key]['nullable'] == TRUE
+						&& $field_val===NULL)
+						$this->fieldsCache[$key] = $field_val;
+					else
+						$this->fieldsCache[$key] = (bool) $this->mapper->{$key};
 				}
 			}
 		}
@@ -2111,7 +2117,12 @@ class Cortex extends Cursor {
 						}
 						if ($this->exists($key)
 							&& preg_match('/BOOL/i',$this->fieldConf[$key]['type'])) {
-							$val = (bool) $mp->mapper->{$key};
+							$field_val = $mp->mapper->{$key};
+							if (isset($this->fieldConf[$key]['nullable'])
+								&& $this->fieldConf[$key]['nullable']==TRUE && $field_val===NULL)
+								$val = $field_val;
+							else
+								$val = (bool) $field_val;
 						}
 					}
 				}
