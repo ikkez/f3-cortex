@@ -2358,6 +2358,19 @@ class Cortex extends Cursor {
 	}
 
 	/**
+	 * return initial field value if field was cleared, otherwise FALSE
+	 * @param $key
+	 * @return bool
+	 */
+	function cleared($key) {
+		$fields = $this->mapper->schema();
+		if (!empty($fields[$key]['initial']) && empty($fields[$key]['value'])) {
+			return $fields[$key]['initial'];
+		}
+		return false;
+	}
+
+	/**
 	 * clear any mapper field or relation
 	 * @param string $key
 	 * @return NULL|void
