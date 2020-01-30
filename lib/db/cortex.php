@@ -2205,7 +2205,7 @@ class Cortex extends Cursor {
 		foreach ($srcfields as $key => $val) {
 			if (isset($this->fieldConf[$key]) && isset($this->fieldConf[$key]['type'])) {
 				if ($this->fieldConf[$key]['type'] == self::DT_JSON && is_string($val))
-					$val = json_decode($val);
+					$val = json_decode($val,true);
 				elseif ($this->fieldConf[$key]['type'] == self::DT_SERIALIZED && is_string($val))
 					$val = unserialize($val);
 			}
@@ -2360,14 +2360,29 @@ class Cortex extends Cursor {
 	/**
 	 * return initial field value if field was cleared, otherwise FALSE
 	 * @param $key
-	 * @return bool
+	 * @return bool|mixed
 	 */
 	function cleared($key) {
 		$fields = $this->mapper->schema();
-		if (!empty($fields[$key]['initial']) && empty($fields[$key]['value'])) {
-			return $fields[$key]['initial'];
-		}
+		if (!empty($fields[$key]['initial']) && empty($fields[$key]['value']))
+			return $this->initial($key);
 		return false;
+	}
+
+	/**
+	 * return initial field value
+	 * @param $key
+	 * @return mixed
+	 */
+	function initial($key) {
+		$fields = $this->mapper->schema();
+		if (!empty($fields[$key]['initial'])) {
+			if ($this->fieldConf[$key]['type'] == self::DT_JSON)
+				return json_decode($fields[$key]['initial'], true);
+			elseif ($this->fieldConf[$key]['type'] == self::DT_SERIALIZED)
+				return unserialize($fields[$key]['initial']);
+		}
+		return $fields[$key]['initial'];
 	}
 
 	/**
