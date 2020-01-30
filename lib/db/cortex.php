@@ -865,7 +865,7 @@ class Cortex extends Cursor {
 				foreach ($result as &$record) {
 					// factory new mappers
 					$record = $this->mapper->factory($record);
-					unset($record, $mapper);
+					unset($record);
 				}
 				return $result;
 			} elseif (!empty($this->preBinds) && !$count) {
@@ -886,6 +886,24 @@ class Cortex extends Cursor {
 		return ($count)
 			? $this->mapper->count($filter,$options,$ttl)
 			: $this->mapper->find($filter,$options,$ttl);
+	}
+
+	/**
+	 * use a raw sql query to find results and factory them into models
+	 * @param $sql
+	 * @param null $args
+	 * @param int $ttl
+	 * @return CortexCollection
+	 */
+	protected function findByRawSQL($query, $args=NULL, $ttl=0) {
+		$result = $this->db->exec($query, $args, $ttl);
+		$cx = new CortexCollection();
+		foreach($result as $row) {
+			$new = $this->factory($row);
+			$cx->add($new);
+			unset($new);
+		}
+		return $cx;
 	}
 
 	/**
