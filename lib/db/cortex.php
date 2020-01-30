@@ -2386,6 +2386,52 @@ class Cortex extends Cursor {
 	}
 
 	/**
+	 * compare new data as an assoc array of [field => value] against the initial field values
+	 * callback functions for $new and $old values can be used to prepare new / cleanup old data
+	 * updated fields are set, $new callback must return a value
+	 * @param array $fields
+	 * @param callback $new
+	 * @param callback $old
+	 */
+	function compare($fields, $new, $old=NULL) {
+		foreach ($fields as $field=>$data) {
+			if (!empty($data)) {
+				$init = $this->initial($field);
+				if (is_array($data)) {
+					// cleanup old values
+					if ($init && $old) {
+						$old_values = array_diff($init,$data);
+						if ($old_values)
+							foreach ($old_values as $val)
+								call_user_func($old,$val);
+					}
+					if ($new)
+						// handle new values
+						foreach ($data as &$val) {
+							$val = call_user_func($new,$val);
+							unset($val);
+						}
+				}
+				else {
+					// changed
+					if ($init !== $data && $old)
+						call_user_func($old,$init);
+					if ($new)
+						$data = call_user_func($new,$data);
+				}
+			} elseif ($old && ($old_values = $this->cleared($field))) {
+				// cleanup all
+				if (!is_array($old_values))
+					$old_values=[$old_values];
+				foreach ($old_values as $val)
+					call_user_func($old,$val);
+			}
+			if ($data)
+				$this->set($field, $data);
+		}
+	}
+
+	/**
 	 * clear any mapper field or relation
 	 * @param string $key
 	 * @return NULL|void
