@@ -158,7 +158,7 @@ class Cortex extends Cursor {
 			$f3->get('CORTEX.standardiseID') : TRUE;
 		if(!empty($this->fieldConf))
 			foreach($this->fieldConf as &$conf) {
-				$conf=static::resolveRelationConf($conf,$this->primary);
+				$conf=static::resolveRelationConf($conf, $this->primary);
 				unset($conf);
 			}
 	}
@@ -553,7 +553,7 @@ class Cortex extends Cursor {
 			if(!is_array($relConf))
 				return $field;
 			$rel = $relConf[0]::resolveConfiguration();
-			if(array_key_exists('has-many',$rel['fieldConf'][$relConf[1]])) {
+			if (array_key_exists('has-many',$rel['fieldConf'][$relConf[1]])) {
 				// has-many <> has-many (m:m)
 				$field['has-many']['hasRel'] = 'has-many';
 				$field['has-many']['isSelf'] = (ltrim($relConf[0],'\\')==get_called_class());
@@ -561,8 +561,17 @@ class Cortex extends Cursor {
 				$field['has-many']['relField'] = $relConf[1];
 				$field['has-many']['relFieldType'] = isset($rel['fieldConf'][$relConf[1]]['type']) ?
 					$rel['fieldConf'][$relConf[1]]['type'] : Schema::DT_INT;
-				$field['has-many']['relPK'] = isset($relConf['relPK'])?
-					$relConf['relPK']:$rel['primary'];
+				if (isset($rel['fieldConf'][$relConf[1]]['has-many']['relPK'])) {
+					$field['has-many']['relPK'] = $rel['fieldConf'][$relConf[1]]['has-many']['relPK'];
+					$field['type'] = $rel['fieldConf'][$rel['fieldConf'][$relConf[1]]['has-many']['relPK']]['type'];
+				}
+				elseif (isset($relConf['relPK'])) {
+					$selfConf = static::resolveConfiguration();
+					$field['has-many']['relPK'] = $relConf['relPK'];
+					$field['has-many']['relFieldType'] = $selfConf['fieldConf'][$relConf['relPK']]['type'];
+				}
+				else
+					$field['has-many']['relPK'] = $rel['primary'];
 				$field['has-many']['localKey'] = isset($relConf['localKey'])?
 					$relConf['localKey']:($pkey?:'_id');
 			} else {
@@ -1857,8 +1866,7 @@ class Cortex extends Cursor {
 						else {
 							$fkeys = $results->getAll($key,true);
 							if (empty($fkeys))
-								trigger_error(sprintf('Got empty foreign keys from "%s"',
-									$rel->getTable().'.'.$key), E_USER_WARNING);
+								trigger_error(sprintf('Got empty foreign keys from "%s"', $rel->getTable().'.'.$key), E_USER_WARNING);
 							else {
 								if ($fromConf['isSelf']) {
 									// merge both rel sides and remove itself
@@ -1869,7 +1877,7 @@ class Cortex extends Cursor {
 								unset($rel);
 								$rel = $this->getRelInstance($fromConf[0],null,$key,true);
 								// load foreign models
-								$filter = [$fromConf['relPK'].' IN ?', $fkeys];
+								$filter = [$id.' IN ?', $fkeys];
 								$filter = $this->mergeWithRelFilter($key, $filter);
 								$this->fieldsCache[$key] = $rel->find($filter,
 									$this->getRelFilterOption($key),$this->_ttl);
@@ -2259,8 +2267,11 @@ class Cortex extends Cursor {
 				&& $this->fieldConf[$field]['relType']=='has-many'
 				&& $f3->devoid($key.'.'.$field)) {
 				$val = $this->get($field);
-				if ($val instanceof CortexCollection)
-					$f3->set($key.'.'.$field,$val->getAll('_id'));
+				if ($val instanceof CortexCollection) {
+					$relKey = isset($this->fieldConf[$field]['has-many']['relPK']) ?
+						$this->fieldConf[$field]['has-many']['relPK'] : '_id';
+					$f3->set($key.'.'.$field,$val->getAll($relKey));
+				}
 				elseif (is_array($val))
 					$f3->set($key.'.'.$field,$val);
 				else
