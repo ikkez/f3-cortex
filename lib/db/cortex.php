@@ -1856,19 +1856,24 @@ class Cortex extends Cursor {
 							$this->fieldsCache[$key] = NULL;
 						else {
 							$fkeys = $results->getAll($key,true);
-							if ($fromConf['isSelf']) {
-								// merge both rel sides and remove itself
-								$fkeys = array_diff(array_merge($fkeys,
-									$results->getAll($key.'_ref',true)),[$fId]);
+							if (empty($fkeys))
+								trigger_error(sprintf('Got empty foreign keys from "%s"',
+									$rel->getTable().'.'.$key), E_USER_WARNING);
+							else {
+								if ($fromConf['isSelf']) {
+									// merge both rel sides and remove itself
+									$fkeys = array_diff(array_merge($fkeys,
+										$results->getAll($key.'_ref',true)),[$fId]);
+								}
+								// create foreign table mapper
+								unset($rel);
+								$rel = $this->getRelInstance($fromConf[0],null,$key,true);
+								// load foreign models
+								$filter = [$fromConf['relPK'].' IN ?', $fkeys];
+								$filter = $this->mergeWithRelFilter($key, $filter);
+								$this->fieldsCache[$key] = $rel->find($filter,
+									$this->getRelFilterOption($key),$this->_ttl);
 							}
-							// create foreign table mapper
-							unset($rel);
-							$rel = $this->getRelInstance($fromConf[0],null,$key,true);
-							// load foreign models
-							$filter = array($fromConf['relPK'].' IN ?', $fkeys);
-							$filter = $this->mergeWithRelFilter($key, $filter);
-							$this->fieldsCache[$key] = $rel->find($filter,
-								$this->getRelFilterOption($key),$this->_ttl);
 						}
 					}
 				}
