@@ -259,7 +259,7 @@ In example:
 ),
 ```
 
-Now you're able to save array data in your model field, which is json_encoded into a `text` field behind the scene (of cause only when using a SQL backend).
+Now you're able to save array data in your model field, which is json_encoded into a `text` field behind the scene (of course only when using a SQL backend).
 
 ``` php
 $mapper->colors = array('red','blue','green');
@@ -528,7 +528,7 @@ $tags->load(array('title = ?','Responsive'));
 echo $tags->news[0]->title; // '10 Responsive Images Plugins'
 ```
 
-This example shows the inverse way of querying (using the TagModel to find the corresponding news). Of cause the can also use a more direct way that offers even more possibilities, therefore check the [has()](#has) method.
+This example shows the inverse way of querying (using the TagModel to find the corresponding news). Of course the can also use a more direct way that offers even more possibilities, therefore check the [has()](#has) method.
 
 #### many-to-many, unidirectional
 
@@ -794,7 +794,7 @@ $results = $news->find();
 echo $results[0]->title; // '10 Responsive Images Plugins'
 ```
 
-Of cause you can also use the inverse way of querying, using the TagModel, load them by title and access the shared `$tags->news` property to find your records.
+Of course you can also use the inverse way of querying, using the TagModel, load them by title and access the shared `$tags->news` property to find your records.
 The advantage of the "has" method is that you can also add a condition to the parent as well. This way you could edit the load line into something like this:
 `$news->find(array('published = ?', 1));`. Now you can limit your results based on two different models - you only load *published* news which were tagged "Responsive".
 
