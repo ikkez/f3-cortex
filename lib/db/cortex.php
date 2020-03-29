@@ -293,8 +293,8 @@ class Cortex extends Cursor {
 	}
 
 	/**
-	 * returns the collection where this model lives in
-	 * @return CortexCollection
+	 * returns the collection where this model lives in, or false
+	 * @return CortexCollection|bool
 	 */
 	protected function getCollection() {
 		return ($this->collection && $this->smartLoading)
