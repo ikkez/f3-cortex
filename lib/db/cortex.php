@@ -2114,9 +2114,22 @@ class Cortex extends Cursor {
 			foreach(array_keys($this->vFields) as $key)
 				$fields[$key]=$this->get($key);
 		if (is_int($rel_depths))
-			$rel_depths = array('*'=>$rel_depths-1);
+			$rel_depths = ['*'=>$rel_depths-1];
 		elseif (is_array($rel_depths))
 			$rel_depths['*'] = isset($rel_depths['*'])?--$rel_depths['*']:-1;
+		$mask=[];
+		$relMasks=[];
+		if ($rel_depths)
+			// collect field mask for relations
+			foreach($rel_depths as $i=>$val)
+				if (is_int($i)) {
+					if (is_int(strpos($val,'.'))) {
+						list($key, $relMask) = explode('.',$val,2);
+						$relMasks[$key][] = $relMask;
+					} else
+						$mask[] = $val;
+					unset($rel_depths[$i]);
+				}
 		if ($this->fieldConf) {
 			$fields += array_fill_keys(array_keys($this->fieldConf),NULL);
 			if ($this->whitelist)
@@ -2127,6 +2140,12 @@ class Cortex extends Cursor {
 				if (isset($this->fieldConf[$key]) && is_array($this->fieldConf[$key])) {
 					// handle relations
 					$rd = isset($rel_depths[$key]) ? $rel_depths[$key] : $rel_depths['*'];
+					// assemble field mask
+					if (isset($relMasks[$key]))
+						$rd = (!is_array($rd))
+							? $rd=['*'=>$rd-1]
+							: array_merge($rd, $relMasks[$key]);
+					// fetch relations
 					if ((is_array($rd) || $rd >= 0) && $type=preg_grep('/[belongs|has]-(to-)*[one|many]/',
 							array_keys($this->fieldConf[$key]))) {
 						$relType=current($type);
@@ -2168,6 +2187,9 @@ class Cortex extends Cursor {
 		}
 		// custom getter
 		foreach ($fields as $key => &$val) {
+			if ($mask && !in_array($key,$mask) && !array_key_exists($key,$relMasks))
+				unset($fields[$key]);
+				continue;
 			$val = $this->emit('get_'.$key, $val);
 			unset($val);
 		}
