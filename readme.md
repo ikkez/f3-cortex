@@ -1037,8 +1037,9 @@ var_dump($user->cast(NULL, 2));
 )*/
 ```
 
+#### relation depths
 
-If you only want particular relation fields to be resolved, you can set an array to the `$rel_depths` parameter, with the following schema:
+If you only want particular relation fields to be resolved, you can set an array to the ``$rel_depths`` parameter, with the following schema:
 
 ```php
 $user->cast(NULL, array(
@@ -1071,7 +1072,21 @@ If you don't want any relation to be resolved and casted, just set `$rel_depths`
 Any one-to-many relation field then just contains the `_id` (or any other custom field binding from [$fieldConf](#fieldConf)) of the foreign record,
 many-to-one and many-to-many fields are just empty. 
 
+#### Field masks
 
+You can also use ``$rel_depths`` for defining a mask to mappers, so you can restrict the fields returned from a cast:
+
+```php
+$data = $item->cast(null,[
+    '_id',
+    'order.number',
+    'product._id',
+    'product.title',
+    'product.features._id',
+    'product.features.title',
+    'product.features.icon',
+]);
+```
 
 ### castField
 **Cast a related collection of mappers**
