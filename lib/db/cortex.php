@@ -927,7 +927,8 @@ class Cortex extends Cursor {
 		$res = $this->filteredFind($filter, $options, $ttl);
 		if ($res) {
 			$this->mapper->query = $res;
-			$this->first();
+			$this->reset(FALSE, FALSE);
+			$this->mapper->first();
 		} else
 			$this->mapper->reset();
 		$this->emit('load');
@@ -2325,16 +2326,20 @@ class Cortex extends Cursor {
 	/**
 	 * reset and re-initialize the mapper
 	 * @param bool $mapper
+	 * @param bool $essentials
 	 * @return NULL|void
 	 */
-	public function reset($mapper = true) {
+	public function reset($mapper = true, $essentials=true) {
 		if ($mapper)
 			$this->mapper->reset();
 		$this->fieldsCache=[];
 		$this->saveCsd=[];
-		$this->countFields=[];
-		$this->preBinds=[];
-		$this->grp_stack=null;
+		if ($essentials) {
+			// used to store filter conditions and parameters
+			$this->countFields=[];
+			$this->preBinds=[];
+			$this->grp_stack=null;
+		}
 		// set default values
 		if (($this->dbsType == 'jig' || $this->dbsType == 'mongo')
 			&& !empty($this->fieldConf))
