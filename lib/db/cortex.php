@@ -2582,7 +2582,13 @@ class CortexQueryParser extends \Prefab {
 		}
 		$where = array_shift($cond);
 		$args = $cond;
-		$where = str_replace(['&&', '||'], ['AND', 'OR'], $where);
+		$unify=[['&&'],['AND']];
+		// TODO: OR support via || operator is deprecated
+		if ($engine == 'jig' || ($engine=='sql' && $db->driver() == 'mysql')) {
+			$unify[0][]='||';
+			$unify[1][]='OR';
+		}
+		$where = str_replace($unify[0], $unify[1], $where);
 		// prepare IN condition
 		$where = preg_replace('/\bIN\b\s*\(\s*(\?|:\w+)?\s*\)/i', 'IN $1', $where);
 		switch ($engine) {
