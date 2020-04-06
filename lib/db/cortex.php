@@ -2141,10 +2141,11 @@ class Cortex extends Cursor {
 					// handle relations
 					$rd = isset($rel_depths[$key]) ? $rel_depths[$key] : $rel_depths['*'];
 					// assemble field mask
-					if (isset($relMasks[$key]))
-						$rd = (!is_array($rd))
-							? $rd=['*'=>$rd-1]
-							: array_merge($rd, $relMasks[$key]);
+					if (isset($relMasks[$key])) {
+						if (!is_array($rd))
+							$rd = $rd=['*'=>$rd-1];
+						$rd = array_merge($rd, $relMasks[$key]);
+					}
 					// fetch relations
 					if ((is_array($rd) || $rd >= 0) && $type=preg_grep('/[belongs|has]-(to-)*[one|many]/',
 							array_keys($this->fieldConf[$key]))) {
