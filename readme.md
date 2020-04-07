@@ -865,7 +865,7 @@ Notice that `countRel()` only applies to the next called `find()` operation. Cur
 
 ### Virtual fields
 
-Cortex has some abilities for own custom virtual fields. These might be useful to add additional fields that may contain data that is not stored in the real db table or computes its value out of other fields or functions, similar to the [custom field setters and getters](#custom-field-preprocessors).
+Cortex has some abilities for own custom virtual fields. These might be useful to add additional fields that may contain data that is not stored in the real db table or computes its value out of other fields or functions, similar to the [custom field setters and getters](#custom-field-handler).
 
 ```php
 // just set a simple value
