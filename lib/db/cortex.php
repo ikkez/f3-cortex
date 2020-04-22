@@ -2476,7 +2476,7 @@ class Cortex extends Cursor {
 				}
 				else {
 					// changed
-					if ($init !== $data && $old)
+					if ($init !== $data && $old && $init)
 						call_user_func($old,$init);
 					if ($new)
 						$data = call_user_func($new,$data);
