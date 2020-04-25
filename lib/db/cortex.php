@@ -1925,7 +1925,8 @@ class Cortex extends Cursor {
 								$cx->setRelSet($key, NULL);
 						}
 						// get a subset of the preloaded set
-						$this->fieldsCache[$key] = CortexCollection::factory($cx->getSubset($key, $fkeys));
+						$subset = $cx->getSubset($key, $fkeys);
+						$this->fieldsCache[$key] = $subset ? CortexCollection::factory($subset) : NULL;
 					} else {
 						// load foreign models
 						$filter = [$relConf[1].' IN ?', $fkeys];
