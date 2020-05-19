@@ -3111,7 +3111,7 @@ class CortexCollection extends \ArrayIterator {
 				if (!empty($val))
 					$out[] = $val;
 			} elseif($raw)
-				$out[] = $model;
+				$out[] = is_array($model) ? $model[$prop] : $model;
 		}
 		return $out;
 	}
