@@ -420,14 +420,53 @@ For **has-one** and **has-many**
 
 The foreign key is the field name you used in the counterpart model to define the `belongs-to-one` connection.
 
+#### many-to-many
+
 There is one special case for many-to-many relations: here you use a `has-many` type on both models, which implies that there must be a 3rd pivot table that will be used for keeping the foreign keys that binds everything together. Usually Cortex will auto-create that table upon [setup](#set-up) method, using an auto-generated table name. If you like to use a custom name for that joining-table, add a 3rd parameter to the config array of *both* models, i.e.:
 
 ```
 'tags' => array(
-    'has-many' => array('\Model\Tag','news','news_tags'),
+    'has-many' => ['\Model\Tag','news','news_tags'],
 ),
 ```
 
+By default the primary key is used as reference for the record in the pivot table. In case you need to use a different field for the primary key, so can set a custom `localKey`.
+
+```
+'tag_key' => [
+    'type' => \DB\SQL\Schema::DT_TEXT,
+],
+'tags' => [
+    'has-many' => ['\Model\Tag','news','news_tags'
+        'localKey'=> 'tag_key'
+    ],
+],
+```
+
+##### Custom pivot column names
+
+If you're working with an existing database table, or want to use own field names for the column in the pivot table, you can set those up with the `relField` option:
+
+I.e. in the news model:
+```
+'tags' => [
+    'has-many' => ['\Model\Tag','news','news_tags'
+        'relField'=> 'news_id'
+    ],
+],
+```
+
+and in the tag model:
+
+```
+'news' => array(
+    'has-many' => ['\Model\News','tags','news_tags',
+        'relField' => 'tag_id'
+    ],
+),
+```
+
+That means that the 3rd pivot table constains `news_id` and `tag_id` fields.
 
 ### Working with Relations
 
@@ -581,6 +620,15 @@ class User extends \DB\Cortex {
     ]
   ];
 }
+```
+
+To use a different field name in the pivot table for the reference field, use `selfRefField` option:
+```php
+'friends' => [
+  'has-many' => ['\Model\User','friends',
+    'selfRefField' => 'friends_ref'
+  ]
+]
 ```
 
 Because this is also a many to many relation, a pivot table is needed too. Its name is generated based on the table and fields name, but can also be defined as 3rd array parameter, i.e. `['\Model\User','friends','user_friends']`.

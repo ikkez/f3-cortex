@@ -357,11 +357,12 @@ class Cortex extends Cursor {
 								static::getMMTableName($rel['table'], $relConf['relField'],
 									$table, $key, $rel['fieldConf'][$relConf[1]]['has-many']);
 							if (!in_array($mmTable,$schema->getTables())) {
+								$toConf = $relConf[0]::resolveRelationConf($rel['fieldConf'][$relConf[1]]);
 								$mmt = $schema->createTable($mmTable);
-								$relField = $relConf['relField'].($relConf['isSelf']?'_ref':'');
+								$relField = $relConf['isSelf']?$relConf['selfRefField']:$relConf['relField'];
 								$mmt->addColumn($relField)->type($relConf['relFieldType']);
-								$mmt->addColumn($key)->type($field['type']);
-								$index = [$relField,$key];
+								$mmt->addColumn($toConf['has-many']['relField'])->type($field['type']);
+								$index = [$relField,$toConf['has-many']['relField']];
 								sort($index);
 								$mmt->addIndex($index);
 								$mmt->build();
@@ -557,7 +558,9 @@ class Cortex extends Cursor {
 				$field['has-many']['hasRel'] = 'has-many';
 				$field['has-many']['isSelf'] = (ltrim($relConf[0],'\\')==get_called_class());
 				$field['has-many']['relTable'] = $rel['table'];
-				$field['has-many']['relField'] = $relConf[1];
+				$field['has-many']['relField'] = $relField =
+					isset($relConf['relField']) ? $relConf['relField'] : $relConf[1];
+				$field['has-many']['selfRefField'] = $relField.'_ref';
 				$field['has-many']['relFieldType'] = isset($rel['fieldConf'][$relConf[1]]['type']) ?
 					$rel['fieldConf'][$relConf[1]]['type'] : Schema::DT_INT;
 				if (isset($rel['fieldConf'][$relConf[1]]['has-many']['relPK'])) {
@@ -1013,9 +1016,11 @@ class Cortex extends Cursor {
 			$hasIDs = $hasSet->getAll('_id',true);
 			$mmTable = $this->mmTable($fieldConf,$key);
 			$pivot = $this->getRelInstance(null,['db'=>$this->db,'table'=>$mmTable]);
-			$filter = [$key.' IN ?',$hasIDs];
+			$rel = $fieldConf[0]::resolveConfiguration();
+			$toConf = $fieldConf[0]::resolveRelationConf($rel['fieldConf'][$fieldConf[1]]);
+			$filter = [$toConf['has-many']['relField'].' IN ?',$hasIDs];
 			if ($fieldConf['isSelf']) {
-				$filter[0].= ' OR '.$key.'_ref IN ?';
+				$filter[0].= ' OR '.$fieldConf['selfRefField'].' IN ?';
 				$filter[] = $hasIDs;
 			}
 			$pivotSet = $pivot->find($filter,null,$ttl);
@@ -1023,7 +1028,7 @@ class Cortex extends Cursor {
 				$result = $pivotSet->getAll($fieldConf['relField'],true);
 				if ($fieldConf['isSelf'])
 					$result = array_merge($result,
-						$pivotSet->getAll($fieldConf['relField'].'_ref',true));
+						$pivotSet->getAll($fieldConf['selfRefField'],true));
 				$result = array_diff(array_unique($result),$hasIDs);
 			}
 		}
@@ -1040,19 +1045,21 @@ class Cortex extends Cursor {
 		$mmTable = $this->mmTable($fieldConf,$key);
 		if ($fieldConf['isSelf']) {
 			$relTable .= '_ref';
-			$hasJoin[] = $this->_sql_left_join($this->primary,$this->table,$fieldConf['relField'].'_ref',$mmTable);
-			$hasJoin[] = $this->_sql_left_join($key,$mmTable,$fieldConf['relPK'],
+			$hasJoin[] = $this->_sql_left_join($this->primary,$this->table,$fieldConf['selfRefField'],$mmTable);
+			$hasJoin[] = $this->_sql_left_join($fieldConf['relField'],$mmTable,$fieldConf['relPK'],
 				[$fieldConf['relTable'],$relTable]);
 			// cross-linked
 			$hasJoin[] = $this->_sql_left_join($this->primary,$this->table,
 				$fieldConf['relField'],[$mmTable,$mmTable.'_c']);
-			$hasJoin[] = $this->_sql_left_join($key.'_ref',$mmTable.'_c',$fieldConf['relPK'],
+			$hasJoin[] = $this->_sql_left_join($fieldConf['selfRefField'],$mmTable.'_c',$fieldConf['relPK'],
 				[$fieldConf['relTable'],$relTable.'_c']);
 			$this->_sql_mergeRelCondition($hasCond,$relTable,$filter,$options);
 			$this->_sql_mergeRelCondition($hasCond,$relTable.'_c',$filter,$options,'OR');
 		} else {
 			$hasJoin[] = $this->_sql_left_join($this->primary,$this->table,$fieldConf['relField'],$mmTable);
-			$hasJoin[] = $this->_sql_left_join($key,$mmTable,$fieldConf['relPK'],$relTable);
+			$rel = $fieldConf[0]::resolveConfiguration();
+			$toConf = $rel['fieldConf'][$fieldConf[1]]['has-many'];
+			$hasJoin[] = $this->_sql_left_join($toConf['relField'],$mmTable,$fieldConf['relPK'],$relTable);
 			$this->_sql_mergeRelCondition($hasCond,$relTable,$filter,$options);
 		}
 		return $hasJoin;
@@ -1254,7 +1261,7 @@ class Cortex extends Cursor {
 						$id = $this->get($relConf['localKey'],true);
 						$filter = [$relConf['relField'].' = ?',$id];
 						if ($relConf['isSelf']) {
-							$filter[0].= ' OR '.$relConf['relField'].'_ref = ?';
+							$filter[0].= ' OR '.$relConf['selfRefField'].' = ?';
 							$filter[] = $id;
 						}
 						// delete all refs
@@ -1262,12 +1269,17 @@ class Cortex extends Cursor {
 							$mm->erase($filter);
 						// update refs
 						elseif (is_array($val)) {
+							// TODO: check if we can keep existing entries
 							$mm->erase($filter);
+							$relFieldConf = $this->getRelInstance($relConf[0],$relConf,$key)
+								->getFieldConfiguration();
+							$fkey = $relFieldConf[$relConf[1]]['has-many']['relField'];
 							foreach(array_unique($val) as $v) {
 								if ($relConf['isSelf'] && $v==$id)
 									continue;
-								$mm->set($key,$v);
-								$mm->set($relConf['relField'].($relConf['isSelf']?'_ref':''),$id);
+								$mm->set($fkey,$v);
+								$mm->set($relConf['isSelf'] ? $relConf['selfRefField']
+									: $relConf['relField'], $id);
 								$mm->save();
 								$mm->reset();
 							}
@@ -1812,7 +1824,7 @@ class Cortex extends Cursor {
 							// get all pivot IDs
 							$filter = [$fromConf['relField'].' IN ?',$relKeys];
 							if ($fromConf['isSelf']) {
-								$filter[0].= ' OR '.$fromConf['relField'].'_ref IN ?';
+								$filter[0].= ' OR '.$fromConf['selfRefField'].' IN ?';
 								$filter[] = $relKeys;
 							}
 							$mmRes = $rel->find($filter,null,$this->_ttl);
@@ -1822,9 +1834,9 @@ class Cortex extends Cursor {
 								$pivotRel = [];
 								$pivotKeys = [];
 								foreach($mmRes as $model) {
-									$val = $model->get($key,true);
+									$val = $model->get($toConf['relField'],true);
 									if ($fromConf['isSelf']) {
-										$refVal = $model->get($fromConf['relField'].'_ref',true);
+										$refVal = $model->get($fromConf['selfRefField'],true);
 										$pivotRel[(string) $refVal][] = $val;
 										$pivotRel[(string) $val][] = $refVal;
 										$pivotKeys[] = $val;
@@ -1857,21 +1869,21 @@ class Cortex extends Cursor {
 						$filter = [$fromConf['relField'].' = ?',$fId];
 						if ($fromConf['isSelf']) {
 							$filter = [$fromConf['relField'].' = ?',$fId];
-							$filter[0].= ' OR '.$fromConf['relField'].'_ref = ?';
+							$filter[0].= ' OR '.$fromConf['selfRefField'].' = ?';
 							$filter[] = $filter[1];
 						}
 						$results = $rel->find($filter,null,$this->_ttl);
 						if (!$results)
 							$this->fieldsCache[$key] = NULL;
 						else {
-							$fkeys = $results->getAll($key,true);
+							$fkeys = $results->getAll($toConf['relField'],true);
 							if (empty($fkeys))
-								trigger_error(sprintf('Got empty foreign keys from "%s"', $rel->getTable().'.'.$key), E_USER_WARNING);
+								trigger_error(sprintf('Got empty foreign keys from "%s"', $rel->getTable().'.'.$toConf['relField']), E_USER_WARNING);
 							else {
 								if ($fromConf['isSelf']) {
 									// merge both rel sides and remove itself
 									$fkeys = array_diff(array_merge($fkeys,
-										$results->getAll($key.'_ref',true)),[$fId]);
+										$results->getAll($toConf['selfRefField'],true)),[$fId]);
 								}
 								// create foreign table mapper
 								unset($rel);
