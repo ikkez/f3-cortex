@@ -3,17 +3,17 @@
 class ProfileModel extends \DB\Cortex {
 
 	protected
-		$fieldConf = array(
-			'message' => array(
+		$fieldConf = [
+			'message' => [
 				'type' => \DB\SQL\Schema::DT_TEXT
-			),
-			'image' => array(
+			],
+			'image' => [
 				'type' => \DB\SQL\Schema::DT_VARCHAR256
-			),
-			'author' => array(
+			],
+			'author' => [
 				'belongs-to-one' => '\AuthorModel'
-			)
-		),
+			]
+	],
 //		$primary = 'profile_id',
 		$table = 'profile',
 		$db = 'DB';

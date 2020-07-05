@@ -3,27 +3,27 @@
 class AuthorModel extends \DB\Cortex {
 
 	protected
-		$fieldConf = array(
-			'name' => array(
+		$fieldConf = [
+			'name' => [
 				'type' => \DB\SQL\Schema::DT_VARCHAR256
-			),
-			'mail' => array(
+			],
+			'mail' => [
 				'type' => \DB\SQL\Schema::DT_VARCHAR256
-			),
-			'website' => array(
+			],
+			'website' => [
 				'type' => \DB\SQL\Schema::DT_VARCHAR256
-			),
-			'news' => array(
-				'has-many' => array('\NewsModel','author'),
-			),
-			'profile' => array(
-				'has-one' => array('\ProfileModel','author'),
-			),
-			'friends' => array(
-				'has-many' => array('\AuthorModel','friends'),
-			),
-		),
-//		$primary = 'aid',
+			],
+			'news' => [
+				'has-many' => ['\NewsModel','author'],
+			],
+			'profile' => [
+				'has-one' => ['\ProfileModel','author'],
+			],
+			'friends' => [
+				'has-many' => ['\AuthorModel','friends'],
+			],
+	],
+		$primary = 'id',
 		$table = 'author',
 		$db = 'DB';
 

@@ -3,16 +3,16 @@
 class TagModel extends \DB\Cortex {
 
 	protected
-		$fieldConf = array(
-			'title' => array(
+		$fieldConf = [
+			'title' => [
 				'type' => \DB\SQL\Schema::DT_VARCHAR128
-			),
-			'news' => array(
-				'has-many' => array('\NewsModel','tags2','news_tags'),
-//				'has-many' => array('\NewsModel','tags2'),
-			),
-		),
-//		$primary = 'tid',
+			],
+			'news' => [
+				'has-many' => ['\NewsModel','tags2','news_tags',
+					'relField' => 'taaags'
+				],
+			],
+		],
 		$table = 'tags',
 		$db = 'DB';
 

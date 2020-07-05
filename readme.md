@@ -106,14 +106,14 @@ $user->save();
 Alright, that wasn't very impressive. But now let's find this guy again:
 
 ``` php
-$user->load(array('mail = ?','jacky@email.com'));
+$user->load(['mail = ?','jacky@email.com']);
 echo $user->name; // shouts out: Jack Ripper
 ```
 
 As you can see, the filter array is pure SQL syntax, that you would already use with the F3 SQL Mapper. In Cortex this will work with all 3 DB engines. Here is a little more complex `where` criteria:
 
 ```php
-$user->load(array('name like ? AND (deleted = 0 OR rights > ?)', 'Jack%', 3));
+$user->load(['name like ? AND (deleted = 0 OR rights > ?]', 'Jack%', 3));
 ```
 
 No need for complex criteria objects or confusing Mongo where-array constructions. It's just as simple as you're used to. Using a Jig DB will automatically translate that query into the appropriate Jig filter:
@@ -203,24 +203,24 @@ namespace Model;
 class User extends \DB\Cortex {
 
   protected
-    $fieldConf = array(
-        'name' => array(
+    $fieldConf = [
+        'name' => [
             'type' => 'VARCHAR256',
             'nullable' => false,
-        ),
-        'mail' => array(
+        ],
+        'mail' => [
             'type' => 'VARCHAR128',
             'index' => true,
             'unique' => true,
-        ),
-        'website' => array(
+        ],
+        'website' => [
             'type' => 'VARCHAR256'
-        ),
-        'rights_level' => array(
+        ],
+        'rights_level' => [
             'type' => 'TINYINT',
             'default' => 3,
-        ),
-    ),
+        ],
+    ],
     $db = 'DB',
     $table = 'users',
     $primary = 'id',    // name of the primary key (auto-created), default: id
@@ -252,17 +252,17 @@ Cortex comes with two own data types for handling array values in fields. Even w
 In example:
 
 ``` php
-'colors' => array(
+'colors' => [
     'type' => self::DT_JSON
     // or
     'type' => 'JSON'
-),
+],
 ```
 
 Now you're able to save array data in your model field, which is json_encoded into a `text` field behind the scene (of course only when using a SQL backend).
 
 ``` php
-$mapper->colors = array('red','blue','green');
+$mapper->colors = ['red','blue','green'];
 ```
 
 
@@ -304,9 +304,9 @@ rights_level.default = 3
 
 #### Blacklist Fields
 
-The `field()` method can be used to return the available fields on the current model. If called with one simple array argument like `$news->fields(array('title'));`, it'll apply the provided elements as a whitelist to the whole mapper. For the rest of its lifetime it'll only hydrate the fields you permitted here.
-If called with a 2nd argument like `$news->fields(array('author'),true);`, the array is going to be uses as a blacklist instead, and restrict the access to the provided fields.
-You can also define deep nested fields using a **dot** as separator: `$news->fields(array('tags.title'));` will only hydrate the tag title in your news model and wont load or save any other field that exists in your tag model. Subsequent calls to the `fields` method will merge with all already defined blacklist/whitelist definitions.
+The `field()` method can be used to return the available fields on the current model. If called with one simple array argument like `$news->fields(['title']);`, it'll apply the provided elements as a whitelist to the whole mapper. For the rest of its lifetime it'll only hydrate the fields you permitted here.
+If called with a 2nd argument like `$news->fields(['author']),true);`, the array is going to be uses as a blacklist instead, and restrict the access to the provided fields.
+You can also define deep nested fields using a **dot** as separator: `$news->fields(['tags.title']);` will only hydrate the tag title in your news model and wont load or save any other field that exists in your tag model. Subsequent calls to the `fields` method will merge with all already defined blacklist/whitelist definitions.
 
 
 ### Set up
@@ -322,11 +322,11 @@ If your Model has a valid field configuration, you are able to run this installa
 If you have no model class you need to provide all parameters the setup method has.
 
 ``` php
-$fields = array(
-    'name' => array('type' => \DB\SQL\Schema::DT_TEXT),
-    'mail' => array('type' => \DB\SQL\Schema::DT_INT4),
-    'website' => array('type' => \DB\SQL\Schema::DT_INT4),
-);
+$fields = [
+    'name' => ['type' => \DB\SQL\Schema::DT_TEXT],
+    'mail' => ['type' => \DB\SQL\Schema::DT_INT4],
+    'website' => ['type' => \DB\SQL\Schema::DT_INT4],
+];
 \DB\Cortex::setup($db, 'users', $fields);
 ``` 
 
@@ -403,19 +403,19 @@ Whereas `has-*` definitions are just virtual fields which are going to query the
 For **belongs-to-one** and **belongs-to-many**
 
 ```
-'realTableField' => array(
+'realTableField' => [
     'relationType' => '\Namespace\ClassName',
-),
+],
 ```
 
-Defining a foreign key for `belongs-to-*` is optional. The default way is to use the identifier field. For SQL engines this is either the default primary key `id` or the custom primary key that can be set with the `$primary` class property. NoSQL engines will use `_id`. If you need to define another non-primary field to join with, use `array('\Namespace\ClassName','cKey')`.
+Defining a foreign key for `belongs-to-*` is optional. The default way is to use the identifier field. For SQL engines this is either the default primary key `id` or the custom primary key that can be set with the `$primary` class property. NoSQL engines will use `_id`. If you need to define another non-primary field to join with, use `['\Namespace\ClassName','cKey']`.
 
 For **has-one** and **has-many**
 
 ```
-'virtualField' => array(
-    'relationType' => array('\Namespace\ClassName','foreignKey'),
-),
+'virtualField' => [
+    'relationType' => ['\Namespace\ClassName','foreignKey'],
+],
 ```
 
 The foreign key is the field name you used in the counterpart model to define the `belongs-to-one` connection.
@@ -425,9 +425,9 @@ The foreign key is the field name you used in the counterpart model to define th
 There is one special case for many-to-many relations: here you use a `has-many` type on both models, which implies that there must be a 3rd pivot table that will be used for keeping the foreign keys that binds everything together. Usually Cortex will auto-create that table upon [setup](#set-up) method, using an auto-generated table name. If you like to use a custom name for that joining-table, add a 3rd parameter to the config array of *both* models, i.e.:
 
 ```
-'tags' => array(
+'tags' => [
     'has-many' => ['\Model\Tag','news','news_tags'],
-),
+],
 ```
 
 By default the primary key is used as reference for the record in the pivot table. In case you need to use a different field for the primary key, so can set a custom `localKey`.
@@ -459,11 +459,11 @@ I.e. in the news model:
 and in the tag model:
 
 ```
-'news' => array(
+'news' => [
     'has-many' => ['\Model\News','tags','news_tags',
         'relField' => 'tag_id'
     ],
-),
+],
 ```
 
 That means that the 3rd pivot table constains `news_id` and `tag_id` fields.
@@ -478,7 +478,7 @@ To save a relation:
 
 ``` php
 $author = new \AuthorModel();
-$author->load(array('name = ?','Johnny English'));
+$author->load(['name = ?','Johnny English']);
 
 $profile = new ProfileModel();
 $profile->status_message = 'Hello World';
@@ -502,8 +502,8 @@ echo $profile->author->name; // Johnny English
 Save an author to a news.
 
 ``` php
-$author->load(array('name = ?','Johnny English'));
-$news->load(array('_id = ?','521eedf5ed779'));
+$author->load(['name = ?','Johnny English']);
+$news->load(['_id = ?','521eedf5ed779']);
 $news->author = $author; // set the object or the raw id
 $news->save();
 ```
@@ -519,7 +519,7 @@ The field `author` now holds the whole mapper object of the AuthorModel. So you 
 The getting all news by an author in the counterpart looks like this:
 
 ``` php
-$author->load(array('_id = ?', 42));
+$author->load(['_id = ?', 42]);
 $author->news; // is now an array of NewsModel objects
 
 // if you like to cast them all you can use
@@ -555,7 +555,7 @@ $news->save();
 Now you can get all tags of a news entry:
  
 ``` php
-$news->load(array('_id = ?',1));
+$news->load(['_id = ?',1]);
 echo $news->tags[0]['title']; // Web Design
 echo $news->tags[1]['title']; // Responsive
 ```
@@ -563,7 +563,7 @@ echo $news->tags[1]['title']; // Responsive
 And all news that are tagged with *Responsive*:
 
 ``` php
-$tags->load(array('title = ?','Responsive'));
+$tags->load(['title = ?','Responsive']);
 echo $tags->news[0]->title; // '10 Responsive Images Plugins'
 ```
 
@@ -578,14 +578,14 @@ This is an unidirectional binding, because the counterpart wont know anything ab
 Saving works the same way like the other m:m type described above
 
 ``` php
-$news->tags = array(4,7); // IDs of TagModel
+$news->tags = [4,7]; // IDs of TagModel
 $news->save();
 ```
 
 and get them back:
 
 ``` php
-$news->load(array('_id = ?', 77));
+$news->load(['_id = ?', 77]);
 echo $news->tags[0]->title; // Web Design
 echo $news->tags[1]->title; // Responsive
 ```
@@ -651,7 +651,7 @@ $userC->load(['_id = ?', 3]);
 if ($userA->friends)
 	$userA[] = $userB;
 else 
-	$userA = array($userB);
+	$userA = [$userB];
 	
 $userA->save();
 
@@ -765,47 +765,47 @@ With comparison operators, you can do the following things:
  
 *  compare fields against other fields:
 
-	`array('foo < bar')`
+	`['foo < bar']`
 	
 *  compare fields against values:
 
-	`array('foo >= 1')` or `array('foo == \'bar\'')`
+	`['foo >= 1']` or `['foo == \'bar\'']`
 	
 Especially for value comparison, it's **highly recommended** to use placeholders in your filter and bind their values accordingly. This ensures that the data mapper uses parameterized queries for better security. Placeholders go like this:
 
 *  positional bind-parameters:
 
-	`array('foo = ?', 1)` or `array('foo = ? AND bar < ?', 'baz', 7)`
+`['foo = ?', 1]` or `['foo = ? AND bar < ?', 'baz', 7]`
 
 *  named bind-parameters:
 
-	`array('foo = :foo',':foo'=>1)`
+	`['foo = :foo',':foo'=>1]`
 
-	`array('foo = :foo AND bar < :bar',':foo'=>'hallo', ':bar'=>7)`
+	`['foo = :foo AND bar < :bar',':foo'=>'hallo', ':bar'=>7]`
 	
 **Sugar**
 
 *  what's a special sugar in Cortex is, that you can also mix both types together:
 
-	`array('foo = ? AND bar < :bar', 'bar', ':bar'=>7)`
+	`['foo = ? AND bar < :bar', 'bar', ':bar'=>7]`
 
 *  and you can also reuse named parameter (not possible in raw PDO):
 
-	`array('min > :num AND max < :num', ':num' => 7)`
+	`['min > :num AND max < :num', ':num' => 7]`
 
 *  comparison with `NULL` (nullable fields) works this easy:
 
-	`array('foo = ?', NULL)` or `array('foo != ?', NULL)`
+	`['foo = ?', NULL]` or `['foo != ?', NULL]`
 
 **Search**
 
 *  The `LIKE` operator works the same way like the [F3 SQL search syntax](http://www.fatfreeframework.com/sql-mapper#search). The search wildcard (`%`) belongs into the bind value, not the query string.
 
-	`array('title LIKE ?', '%castle%')` or `array('email NOT LIKE ?', '%gmail.com')`
+	`['title LIKE ?', '%castle%']` or `['email NOT LIKE ?', '%gmail.com']`
 
 *  The `IN` operator usually needs multiple placeholders in raw PDO (like `foo IN (?,?,?)`). In Cortex queries you simply use an array for this, the QueryParser does the rest.
 
-	`array('foo IN ?', array(1,2,3))`
+	`['foo IN ?', [1,2,3]]`
 	
 	You can also use a CortexCollection as bind parameter. In that case, the primary keys are automatically used for matching:
 	
@@ -837,21 +837,21 @@ The has method adds some conditions to a related field, that must be fulfilled i
 In other words: Let's find all news records that are tagged by "Responsive".
 
 ``` php
-$news->has('tags', array('title = ?','Responsive'));
+$news->has('tags', ['title = ?','Responsive']);
 $results = $news->find();
 echo $results[0]->title; // '10 Responsive Images Plugins'
 ```
 
 Of course you can also use the inverse way of querying, using the TagModel, load them by title and access the shared `$tags->news` property to find your records.
 The advantage of the "has" method is that you can also add a condition to the parent as well. This way you could edit the load line into something like this:
-`$news->find(array('published = ?', 1));`. Now you can limit your results based on two different models - you only load *published* news which were tagged "Responsive".
+`$news->find(['published = ?', 1]);`. Now you can limit your results based on two different models - you only load *published* news which were tagged "Responsive".
 
 You can also add multiple has-conditions to different relations:
 
 ``` php
-$news->has('tags', array('title = ?','Responsive'));
-$news->has('author', array('username = ?','ikkez'));
-$results = $news->find(array('published = ?', 1), array('limit'=>3, 'order'=>'date DESC'));
+$news->has('tags', ['title = ?','Responsive']);
+$news->has('author', ['username = ?','ikkez']);
+$results = $news->find(['published = ?', 1], ['limit'=>3, 'order'=>'date DESC']);
 ```
 
 Now you only load the last 3 published news written by me, which were tagged "Responsive", sorted by release date. ;)
@@ -863,8 +863,8 @@ If you like, you can also call them in a fluent style: `$news->has(...)->load(..
 The filter method is meant for limiting the results of relations. In example: load author x and only his news from 2014.
 
 ``` php
-$author->filter('news', array('date > ?','2014-01-01'));
-$author->load(array('username = ?', 'ikkez'));
+$author->filter('news', ['date > ?','2014-01-01']);
+$author->load(['username = ?', 'ikkez']);
 ```
 
 The same way like the `has()` method does, you can add multiple filter conditions. You can mix filter and has conditions too.
@@ -877,14 +877,14 @@ Filter conditions are currently not inherited. That means if you recursively acc
 It is also possible to filter deep nested relations using the `.` dot style syntax. The following example finds all authors and only loads its news that are tagged with "Responsive":
 
 ``` php
-$author->filter('news.tags', array('title = ?','Responsive'));
+$author->filter('news.tags', ['title = ?','Responsive']);
 $author->find();
 ```
 
 The same applies for the has filter. The next example is similar to the previous one, but this time, instead of finding all authors, it only returns authors that have written a news entry that was tagged with "Responsive":
 
 ``` php
-$author->has('news.tags', array('title = ?','Responsive'));
+$author->has('news.tags', ['title = ?','Responsive']);
 $author->find();
 ```
 
@@ -905,7 +905,7 @@ Therefore have a look at the `countRel($key)` method. You can call this to add a
 // find all tags with the sum of all news that used the tag, ordered by the top occurring tags first.
 $tag = new \Model\Tag();
 $tag->countRel('news');
-$result = $tag->find(null,array('order'=>'count_news DESC, title'))
+$result = $tag->find(null,['order'=>'count_news DESC, title'])
 ```
 
 The new field that is going to be added to the record is named like `count_{$key}`. As you can see, you can also use that field for additional sorting of your results. You can also combine this with the `has()` and `filter()` methods.
@@ -990,7 +990,7 @@ bool load([ array $filter = NULL [, array $options = NULL [, int $ttl = 0 ]]])
 Simple sample to load a user:
 
 ```php
-$user->load(array('username = ?','jacky'));
+$user->load(['username = ?','jacky']);
 if (!$user->dry()) {
     // user was found and loaded
     echo $user->username;
@@ -1012,7 +1012,7 @@ int loaded()
 Sample:
 
 ```php
-$user->load(array('last_name = ?','Johnson'));
+$user->load(['last_name = ?','Johnson']);
 echo $user->loaded(); // 3
 ```
 
@@ -1022,7 +1022,7 @@ echo $user->loaded(); // 3
 See [http://fatfreeframework.com/cursor#CursorMethods](http://fatfreeframework.com/cursor#CursorMethods).
 
 ```php
-$user->load(array('last_name = ?','Johnson'));
+$user->load(['last_name = ?','Johnson']);
 echo $user->loaded(); // 3
 echo $user->_id; // 1
 $user->last();
@@ -1043,7 +1043,7 @@ array cast ([ Cortex $obj = NULL [, int $rel_depths = 1]])
 A simple cast sample. If the model contains relations, they are also casted for 1 level depth by default:
 
 ```php
-$user->load(array('_id = ?',3));
+$user->load(['_id = ?',3]);
 var_dump($user->cast());
 /* Array (
     [_id] => 3
@@ -1090,30 +1090,30 @@ var_dump($user->cast(NULL, 2));
 If you only want particular relation fields to be resolved, you can set an array to the ``$rel_depths`` parameter, with the following schema:
 
 ```php
-$user->cast(NULL, array(
+$user->cast(NULL, [
   '*' => 0,     // cast all own relations to the given depth, 
                 // 0 doesn't cast any relation (default if this key is missing)
   'modelA' => 0,// if a relation key is defined here, modelA is being loaded and casted,
                 // but not its own relations, because the depth is 0 for it
   'modelB' => 1,// modelB and all its 1st level relations are loaded and casted
-  'modelC' => array(...) // you can recursively extend this cast array scheme
-));
+  'modelC' => [...] // you can recursively extend this cast array scheme
+]);
 
 // simple sample: only cast yourself and the author model without its childs 
-$news->cast(NULL,array(
+$news->cast(NULL,[
     '*'=>0,
     'author'=>0
-));
+]);
 
 // nested sample: only cast yourself, 
 // your own author relation with its profile and all profile relations 
-$news->cast(NULL,array(
+$news->cast(NULL,[
     '*'=>0,
-    'author'=>array(
+    'author'=>[
         '*'=>0,
         'profile'=>1
-    )
-));
+    ]
+]);
 ```
 
 If you don't want any relation to be resolved and casted, just set `$rel_depths` to `0`.
@@ -1155,12 +1155,12 @@ The resulting CortexCollection implements the ArrayIterator and can be treated l
 
 ```php
 // find published #web-design news, sorted by approved user comments
-$news->has('tags',array('slug = ?','web-design'));
-$news->filter('comments', array('approved = ?',1));
+$news->has('tags',['slug = ?','web-design']);
+$news->filter('comments', ['approved = ?',1]);
 $news->countRel('comments');
 $records = $news->find(
-	array('publish_date <= ? and published = ?', date('Y-m-d'), true),
-	array('order' => 'count_comments desc')
+	['publish_date <= ? and published = ?', date('Y-m-d'), true],
+	['order' => 'count_comments desc']
 );
 ```
 
@@ -1245,7 +1245,7 @@ $news->copyfrom('POST','title;text');
 Or an array:
 
 ```php
-$news->copyfrom('POST',array('title','text'));
+$news->copyfrom('POST',['title','text']);
 ```
 
 Or a callback function, which is used to filter the input array:
@@ -1253,7 +1253,7 @@ Or a callback function, which is used to filter the input array:
 
 ```php
 $news->copyfrom('POST',function($fields) {
-    return array_intersect_key($fields,array_flip(array('title','text')));
+    return array_intersect_key($fields,array_flip(['title','text']));
 });
 ```
 
@@ -1298,9 +1298,9 @@ You can also use this counter for sorting, like in this tag-cloud sample:
 
 ```php
 $tags = new \Model\Tag();
-$tags->filter('news',array('published = ? and publish_date <= ?', true, date('Y-m-d')));
+$tags->filter('news',['published = ? and publish_date <= ?', true, date('Y-m-d')]);
 $tags->countRel('news');
-$result = $tags->find(array('deleted = ?',0), array('order'=>'count_news desc'));
+$result = $tags->find(['deleted = ?',0], ['order'=>'count_news desc']);
 ```
 
 
@@ -1333,7 +1333,7 @@ bool dry()
 Sample:
 
 ```php
-$mapper->load(array('_id = ?','234'));
+$mapper->load(['_id = ?','234']);
 if ($mapper->dry()) {
     // not found
 } else {
@@ -1351,13 +1351,13 @@ null erase([ array $filter = null ])
 When a `$filter` parameter is set, it deletes all matching records:
 
 ```php
-$user->erase(array('deleted = ?', 1));
+$user->erase(['deleted = ?', 1]);
 ```
  
 It deletes the loaded record when called on a hydrated mapper without `$filter` parameter:
 
 ```php
-$user->load(array('_id = ?',6));
+$user->load(['_id = ?',6]);
 $user->erase();
 ```
 
@@ -1377,7 +1377,7 @@ If `$relField` is true, it also checks the [$fieldConf](#fieldConf) for defined 
 **get fields or set whitelist / blacklist of fields**
 
 ```php
-array fields([ array $fields = array() [, bool $exclude = false ])
+array fields([ array $fields = [] [, bool $exclude = false ])
 ```
 
 When you call this method without any parameter, it returns a list of available fields from the schema.
@@ -1398,7 +1398,7 @@ If you set a `$fields` array, it'll enable the field whitelisting, and put the g
 All non-whitelisted fields on loaded records are not available, visible nor accessible anymore. This is useful when you don't want certain fields in a returned casted array.
 
 ```php
-$user->fields(array('username','email')); // only those fields
+$user->fields(['username','email']); // only those fields
 $user->load();
 var_dump($user->cast());
 /* Array(
@@ -1414,7 +1414,7 @@ If you set the `$exclude` parameter to `true`, it'll also enable the whitelistin
 In other words, the given $fields become blacklisted, the only the remaining fields stay visible. 
 
 ```php
-$user->fields(array('email'), true); // all fields, but not these
+$user->fields(['email'], true); // all fields, but not these
 $user->load();
 var_dump($user->cast());
 /* Array(
@@ -1429,7 +1429,7 @@ var_dump($user->cast());
 In case you have relational fields configured on the model, you can also prohibit access for the fields of that relations. For that use the dot-notation:
 
 ```php
-$comments->fields(array('user.password'), true); // exclude the password field in user model
+$comments->fields(['user.password'], true); // exclude the password field in user model
 $comments->load();
 var_dump($comments->cast());
 /* Array(
@@ -1513,10 +1513,10 @@ This is useful when you want to add more conditions to your filter array or want
 Use the `$glue` parameter to define the part that is used to merge two filters together (usually `AND` or `OR`).
 
 ```php
-$filter1 = array('_id = ?', 999);
-$filter2 = array('published = ? or active = ?', true, false);
+$filter1 = ['_id = ?', 999];
+$filter2 = ['published = ? or active = ?', true, false];
 
-$new_filter = $mapper->mergeFilter(array($filter1, $filter2));
+$new_filter = $mapper->mergeFilter([$filter1, $filter2]);
 // array('(_id = ?) and (published = ? or active = ?)', 999, true, false)
 ```
 
@@ -1592,7 +1592,7 @@ $user->email = 'admin@domain.com';
 $user->save(); // insert
 
 $user->reset();
-$user->load(array('username = ?','admin'));
+$user->load(['username = ?','admin']);
 $user->email = 'webmaster@domain.com';
 $user->save(); // update
 ```
@@ -1660,7 +1660,7 @@ bool valid()
 It's the counterpart to [dry()](#dry).
 
 ```php
-$mapper->load(array('_id = ?','234'));
+$mapper->load(['_id = ?','234']);
 if ($mapper->valid()) {
     // record was loaded
 } else {
@@ -1719,7 +1719,7 @@ array castAll([ $reldepths = 1 ])
 Similar to the `Cortex->cast` method for a single mapper, this automatically casts all containing mappers to a simple nested array.
 
 ```php
-$result = $news->find(array('published = ?',true));
+$result = $news->find(['published = ?',true]);
 if ($result)
     $json = json_encode($result->castAll());
 ```
@@ -1806,7 +1806,7 @@ array getAll( string $prop [, bool $raw = false ])
 You can fetch all values of a certain key from all containing mappers using `getAll()`. Set the 2nd argument to `true` to get only the raw DB results instead of resolved mappers on fields that are configured as a relation.
 
 ```php
-$users = $user->find(array('active = ?',1));
+$users = $user->find(['active = ?',1]);
 $mails = $users->getAll('email'); 
 /* Array(
     'user1@domain.com',
@@ -1881,7 +1881,7 @@ This removes a part from the collection.
 
 * to get the id of any record use `$user->_id;`. This even works if you have setup a custom primary key.
 
-* To find any record by its **id** use the field `_id` in your filter array, like `array('_id = ?', 123)`.
+* To find any record by its **id** use the field `_id` in your filter array, like `['_id = ?', 123]`.
 
 * primary fields should not be included in the `$fieldConf` array. They could interfere with the [setup](#set-up) routine.
 

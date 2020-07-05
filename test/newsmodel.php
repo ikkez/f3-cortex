@@ -3,30 +3,33 @@
 class NewsModel extends \DB\Cortex {
 
 	protected
-		$fieldConf = array(
-			'title' => array(
+		$fieldConf = [
+			'title' => [
 				'type' => \DB\SQL\Schema::DT_VARCHAR128
-			),
-			'text' => array(
+			],
+			'text' => [
 				'type' => \DB\SQL\Schema::DT_TEXT,
-			),
-			'author' => array(
+			],
+			'author' => [
 				'index'=>true,
 				'belongs-to-one' => '\AuthorModel',
-			),
-			'tags' => array(
+			],
+			'tags' => [
 				'belongs-to-many' => '\TagModel',
-			),
-			'tags2' => array(
-				'has-many' => array('\TagModel','news','news_tags'),
-//				'has-many' => array('\TagModel','news'),
-			),
-			'created_at' => array(
+			],
+			'tags2' => [
+				'has-many' => ['\TagModel','news','news_tags',
+					'relField' => 'neeeews'
+				],
+			],
+			'created_at' => [
 				'type' => \DB\SQL\Schema::DT_DATETIME
-			),
+			],
+			'options' => [
+				'type' => self::DT_JSON
+			],
 
-		),
-//		$primary='nid',
+	],
 		$table = 'news',
 		$db = 'DB';
 
