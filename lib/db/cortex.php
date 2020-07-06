@@ -1229,27 +1229,21 @@ class Cortex extends Cursor {
 	}
 
 	/**
-	 * Save mapped record
-	 * @return mixed
-	 **/
-	function save() {
+	 * prepare mapper for save operation
+	 */
+	protected function _beforesave() {
 		// update changed collections
-		$fields = $this->fieldConf;
-		if ($fields)
-			foreach($fields as $key=>$conf)
-				if (!empty($this->fieldsCache[$key]) && $this->fieldsCache[$key] instanceof CortexCollection
-					&& $this->fieldsCache[$key]->hasChanged())
-					$this->set($key,$this->fieldsCache[$key]->getAll('_id',true));
-		// perform event & save operations
-		if ($new = $this->dry()) {
-			if ($this->emit('beforeinsert')===false)
-				return false;
-			$result=$this->insert();
-		} else {
-			if ($this->emit('beforeupdate')===false)
-				return false;
-			$result=$this->update();
-		}
+		foreach($this->fieldConf?:[] as $key=>$conf)
+			if (!empty($this->fieldsCache[$key]) && $this->fieldsCache[$key] instanceof CortexCollection
+				&& $this->fieldsCache[$key]->hasChanged())
+				$this->set($key,$this->fieldsCache[$key]->getAll('_id',true));
+	}
+
+	/**
+	 * additional save operations
+	 */
+	protected function _aftersave() {
+		$fields = $this->fieldConf?:[];
 		// m:m save cascade
 		if (!empty($this->saveCsd)) {
 			foreach($this->saveCsd as $key => $val) {
@@ -1329,8 +1323,15 @@ class Cortex extends Cursor {
 			}
 			$this->saveCsd = [];
 		}
-		$this->emit($new?'afterinsert':'afterupdate');
-		return $result;
+	}
+
+	/**
+	 * Save mapped record
+	 * @return mixed
+	 **/
+	function save() {
+		// perform event & save operations
+		return $this->dry() ? $this->insert() : $this->update();
 	}
 
 	/**
@@ -2518,21 +2519,39 @@ class Cortex extends Cursor {
 		$this->mapper->clear($key);
 	}
 
+	/**
+	 * perform event & insert operations
+	 * @return mixed
+	 */
 	function insert() {
+		$this->_beforesave();
+		if ($this->emit('beforeinsert')===false)
+			return false;
 		$res = $this->mapper->insert();
 		if (is_array($res))
 			$res = $this->mapper;
 		if (is_object($res))
 			$res = $this->factory($res);
+		$this->_aftersave();
+		$this->emit('afterinsert');
 		return is_int($res) ? $this : $res;
 	}
 
+	/**
+	 * perform event & update operations
+	 * @return mixed
+	 */
 	function update() {
+		$this->_beforesave();
+		if ($this->emit('beforeupdate')===false)
+			return false;
 		$res = $this->mapper->update();
 		if (is_array($res))
 			$res = $this->mapper;
 		if (is_object($res))
 			$res = $this->factory($res);
+		$this->_aftersave();
+		$this->emit('afterupdate');
 		return is_int($res) ? $this : $res;
 	}
 
