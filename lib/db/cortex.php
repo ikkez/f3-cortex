@@ -925,7 +925,7 @@ class Cortex extends Cursor {
 	 * @return bool
 	 */
 	public function load($filter = NULL, array $options = NULL, $ttl = 0) {
-		$this->reset();
+		$this->reset(TRUE, FALSE);
 		$this->_ttl=$ttl?:$this->rel_ttl;
 		$res = $this->filteredFind($filter, $options, $ttl);
 		if ($res) {
