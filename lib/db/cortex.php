@@ -156,7 +156,7 @@ class Cortex extends Cursor {
 			$f3->get('CORTEX.smartLoading') : TRUE;
 		$this->standardiseID = $f3->exists('CORTEX.standardiseID') ?
 			$f3->get('CORTEX.standardiseID') : TRUE;
-		if(!empty($this->fieldConf))
+		if (!empty($this->fieldConf))
 			foreach($this->fieldConf as &$conf) {
 				$conf=static::resolveRelationConf($conf, $this->primary);
 				unset($conf);
@@ -1058,7 +1058,7 @@ class Cortex extends Cursor {
 		} else {
 			$hasJoin[] = $this->_sql_left_join($this->primary,$this->table,$fieldConf['relField'],$mmTable);
 			$rel = $fieldConf[0]::resolveConfiguration();
-			$toConf = $rel['fieldConf'][$fieldConf[1]]['has-many'];
+			$toConf = $fieldConf[0]::resolveRelationConf($rel['fieldConf'][$fieldConf[1]])['has-many'];
 			$hasJoin[] = $this->_sql_left_join($toConf['relField'],$mmTable,$fieldConf['relPK'],$relTable);
 			$this->_sql_mergeRelCondition($hasCond,$relTable,$filter,$options);
 		}
