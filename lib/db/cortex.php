@@ -699,6 +699,21 @@ class Cortex extends Cursor {
 			$m_ad_prop->setAccessible(false);
 			unset($m_ad_prop,$m_refl);
 		}
+		// sorting by relation helper: @field.field
+		if ($this->dbsType == 'sql' && !empty($options['order'])
+			&& strpos($options['order'], '@') !== FALSE) {
+			$options['order']=preg_replace_callback(
+				'/(?:^|[\h,])+(@([\w\-\d]+)\.)/i', function($match) {
+					if (isset($this->fieldConf[ $match[2] ])) {
+						$rel = $this->rel($match[2]);
+						// having a has filter on that relation is mandatory
+						if (!isset($this->hasCond[$match[2]]))
+							$this->has($match[2],null,null);
+						return $rel->getTable().'__'.$match[2].'.';
+					}
+					return $match[1];
+				}, $options['order']);
+		}
 		$hasJoin = [];
 		if ($this->hasCond) {
 			foreach($this->hasCond as $key => $hasCond) {
@@ -823,7 +838,7 @@ class Cortex extends Cursor {
 					},array_diff($this->mapper->fields(),array_keys($m_refl_adhoc))));
 				// assemble query
 				$sql = 'SELECT '.$fields.' FROM '.$qtable.' '
-					.implode(' ',$hasJoin).' WHERE '.$filter[0];
+					.implode(' ',$hasJoin).($filter ? ' WHERE '.$filter[0] : '');
 				$db=$this->db;
 				// add grouping in both, count & selection mode
 				if (isset($options['group']))
@@ -1180,6 +1195,8 @@ class Cortex extends Cursor {
 		$params = [];
 		if ($filters) {
 			foreach($filters as $filter) {
+				if (!$filter)
+					continue;
 				$crit[] = array_shift($filter);
 				$params = array_merge($params,$filter);
 			}
