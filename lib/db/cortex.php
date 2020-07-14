@@ -663,6 +663,8 @@ class Cortex extends Cursor {
 	 * @return array|int|false array of underlying cursor objects
 	 */
 	protected function filteredFind($filter = NULL, array $options = NULL, $ttl = 0, $count=false) {
+		if (empty($filter))
+			$filter = NULL;
 		if ($this->grp_stack) {
 			if ($this->dbsType == 'mongo') {
 				$group = [
