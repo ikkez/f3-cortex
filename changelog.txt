@@ -1,5 +1,38 @@
 CHANGELOG - Cortex ORM
 
+1.7.0 (21.07.2020)
+*	new: field mask feature for cast
+*	new method findByRawSQL() to use find with a raw sql query
+*	new method compare() to call custom functions to prepare new / cleanup old values
+*	new method initial() which returns the initial field data after change
+*	new method cleared() which returns the initial value if the field was cleared
+*	new: allow custom timestamp in touch method
+*	added more m:m relation options for pivot tables, #103, #54
+*	added support for custom relation key usage in m:m pivot tables
+*	added error handling for broken m:m relations
+*	added failsafe for empty filter #104
+*	added failsafe for broken relations in belongs-to-many
+*	added shortcut for relation ordering, #104
+*	changed: skip reset for resolving related mappers
+*	countRel() can propagate to nested relations now
+*	refactored save / insert / update event handling, #95
+*	fixed: getAll for raw results with empty items
+*	fixed: lost filter pre-binds and count fields on load method, #99
+*	fixed: preserve logical || operator in filter condition for supported engines, #98
+*	fixed: respect nullable boolean fields when casting
+*	fixed: removed strtolower for tablename in setdown, #93
+*	Fixed an issue with missing pkeys on results that had a HAS-filter applied
+*	Fixed a bug in has( "something IN ?", array)
+*	fixed wrong adhoc var usage for has filter
+*	fixed nested has filter error, #74
+*	fixed relation type regex
+*	adjusted schema cache key name
+*	clean-up adhoc fields in count queries
+*	add possibility to exclude id in field list (for mysql 5.7+ ONLY FULL GROUP BY fix)
+*	Avoid duplicated has-many relations
+*	Avoid quoting "HAVING" and other subquery terms in filter conditions, #78
+*	handle empty arrays for deleting relations, #76
+
 1.6.0 (03.02.2019)
 *	new: defaults() method to get/set schema default values
 *	new: resetFields() method, to only reset specific fields back to defaults
