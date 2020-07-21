@@ -2180,9 +2180,9 @@ class Cortex extends Cursor {
 						$rd = array_merge($rd, $relMasks[$key]);
 					}
 					// fetch relations
-					if ((is_array($rd) || $rd >= 0) && $type=preg_grep('/[belongs|has]-(to-)*[one|many]/',
+					if ((is_array($rd) || $rd >= 0) && $type=preg_grep('/(belongs|has)-(to-)*(one|many)/',
 							array_keys($this->fieldConf[$key]))) {
-						$relType=current($type);
+						$relType=$type[0];
 						// cast relations
 						$val = (($relType == 'belongs-to-one' || $relType == 'belongs-to-many')
 							&& !$mp->exists($key)) ? NULL : $mp->get($key);
