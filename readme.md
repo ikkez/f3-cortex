@@ -434,7 +434,7 @@ By default the primary key is used as reference for the record in the pivot tabl
 
 ```
 'tag_key' => [
-    'type' => \DB\SQL\Schema::DT_TEXT,
+    'type' => \DB\SQL\Schema::DT_VARCHAR128,
 ],
 'tags' => [
     'has-many' => ['\Model\Tag','news','news_tags'
@@ -442,6 +442,16 @@ By default the primary key is used as reference for the record in the pivot tabl
     ],
 ],
 ```
+
+For a custom relation key (foreign key) use `relPK`:
+```
+'tags' => [
+    'has-many' => ['\Model\Tag','news','news_tags'
+        'relPK'=> 'news_id'
+    ],
+],
+```
+
 
 ##### Custom pivot column names
 
@@ -757,7 +767,7 @@ Well basically the `$filter` syntax for writing cortex queries is simple SQL. Bu
 These common filter operators are supported: 
 - relational operators: `<`, `>`, `<=`, `>=`, `==`, `=`, `!=`, `<>`
 - search operators: `LIKE`,`NOT LIKE`, `IN`, `NOT IN` (not case-sensitive)
-- logical operators: `(`, `)`, `AND`, `OR`, `&&`, `||`
+- logical operators: `(`, `)`, `AND`, `OR`, `&&`, (`||` only mysql and jig)
 
 **Comparison**
 
@@ -825,6 +835,30 @@ The `$options` array for load operations respects the following keys:
 
 Use `DESC` and `ASC` flags for sorting fields, just like in SQL. Additional `group` settings are currently just bypassed to the underlying mapper and should work dependant on the selected db engine. Any unification on that might be handled in a future version.
 
+#### Relational sorting
+
+> NB: This is currently experimental as of v1.7
+
+For 1-n relations, you can apply a sorting rule, based on a field of a relation to your order option. You need to prefix the field you used in your `$fieldConf` for the relation with an `@` in your order definition:
+
+Given the following field configuration:
+
+```php
+// Contracts fieldConf:
+'user' => ['belongs-to-one' => UserModel::class]
+
+// User fieldConf:
+'contracts' => ['has-many' => [ContractsModel::class,'user']]
+```
+
+This example will paginate through all contracts records that are sorted by the relational user name: 
+
+```php
+$contracts = new Contracts();
+$res = $contracts->paginate(0,10,null, ['order'=>'@user.name ASC']);
+```
+
+
 ## Advanced Filter Techniques
 
 When your application reaches the point where all basic CRUD operations are working, you probably need some more control about finding your records based on conditions for relations.
@@ -872,7 +906,7 @@ Once a `load` or `find` function is executed, the filter (and has) conditions ar
 
 Filter conditions are currently not inherited. That means if you recursively access the fields of a relation ($author->news[0]->author->news) they get not filtered, but fully lazy loaded again.
 
-### propagation
+### Propagation
 
 It is also possible to filter deep nested relations using the `.` dot style syntax. The following example finds all authors and only loads its news that are tagged with "Responsive":
 
@@ -895,21 +929,21 @@ $author->find();
 
 Cortex comes with some handy shortcuts that could be used for essential field aggregation.
 
-### counting relations
+### Counting relations
 
 Sometimes you need to know how many relations a record has - i.e. for some stats or sorting for top 10 list views.
 
-Therefore have a look at the `countRel($key)` method. You can call this to add a new virtual field to the resulting records that counts the related records on `has-many` fields.
+Therefore have a look at the *[countRel](#countrel)* method, which let you setup a new adhoc field to the resulting records that counts the related records on `has-many` fields.
 
 ```php
-// find all tags with the sum of all news that used the tag, ordered by the top occurring tags first.
+// find all tags with the sum of all news that uses the tag, ordered by the top occurring tags first.
 $tag = new \Model\Tag();
 $tag->countRel('news');
-$result = $tag->find(null,['order'=>'count_news DESC, title'])
+$result = $tag->find(null,['order'=>'count_news DESC, title']);
 ```
 
-The new field that is going to be added to the record is named like `count_{$key}`. As you can see, you can also use that field for additional sorting of your results. You can also combine this with the `has()` and `filter()` methods.
-Notice that `countRel()` only applies to the next called `find()` operation. Currently, you cannot use the virtual count field in your `$filter` query.
+The new field is named like `count_{$key}`, but you can also set a custom alias. As you can see, you can also use that field for additional sorting of your results. You can also combine this with the `has()` and `filter()` methods and set relation counters to nested relations with the `.` separator.
+Notice that `countRel()` only applies to the next called `find()` operation. Currently, you cannot use those virtual count field in a `$filter` query.
 
 ### Virtual fields
 
@@ -924,8 +958,13 @@ $user->virtual('full_name', function($this) {
 });
 ```
 
-You can also use this to count or sum fields together and even reorder your collection on this fields using `$collection->orderBy('foo DESC, bar ASC')`. Keep in mind that these virtual fields only applies to your final received collection - you cannot use these fields in your filter query or sort condition before the actual find. But if you use a SQL engine, you can use the underlying mapper abilities of virtual adhoc fields - just set `$mapper->newField = 'SQL EXPRESSION';` before any load or find operation is made.
+You can also use this to count or sum fields together and even reorder your collection on this fields using `$collection->orderBy('foo DESC, bar ASC')`. Keep in mind that these virtual fields only applies to your final received collection - you cannot use these fields in your filter query or sort condition before the actual find. 
 
+But if you use a SQL engine, you can use the underlying mapper abilities of virtual adhoc fields - just set this before any load or find operation is made:
+ 
+```php
+$mapper->newField = 'SQL EXPRESSION';
+```
 
 ## Mapper API
 
@@ -1040,6 +1079,27 @@ echo $user->skip(2)->_id; // 3
 array cast ([ Cortex $obj = NULL [, int $rel_depths = 1]])
 ```
 
+#### Field masks
+
+> NB: Since configuring *relations depths* seems more and more less practical, a new way of casting relations was introducted: "Field masks". This is the way to go and will replace the legacy "relations depths configuration" in a future release.
+
+ 
+You can also use ``$rel_depths`` for defining a mask to mappers, so you can restrict the fields returned from a cast:
+
+```php
+$data = $item->cast(null,[
+    '_id',
+    'order.number',
+    'product._id',
+    'product.title',
+    'product.features._id',
+    'product.features.title',
+    'product.features.icon',
+]);
+```
+
+#### relation depths (old way)
+
 A simple cast sample. If the model contains relations, they are also casted for 1 level depth by default:
 
 ```php
@@ -1085,7 +1145,7 @@ var_dump($user->cast(NULL, 2));
 )*/
 ```
 
-#### relation depths
+#### relation depths configuration
 
 If you only want particular relation fields to be resolved, you can set an array to the ``$rel_depths`` parameter, with the following schema:
 
@@ -1120,21 +1180,6 @@ If you don't want any relation to be resolved and casted, just set `$rel_depths`
 Any one-to-many relation field then just contains the `_id` (or any other custom field binding from [$fieldConf](#fieldConf)) of the foreign record,
 many-to-one and many-to-many fields are just empty. 
 
-#### Field masks
-
-You can also use ``$rel_depths`` for defining a mask to mappers, so you can restrict the fields returned from a cast:
-
-```php
-$data = $item->cast(null,[
-    '_id',
-    'order.number',
-    'product._id',
-    'product.title',
-    'product.features._id',
-    'product.features.title',
-    'product.features.icon',
-]);
-```
 
 ### castField
 **Cast a related collection of mappers**
@@ -1163,6 +1208,20 @@ $records = $news->find(
 	['order' => 'count_comments desc']
 );
 ```
+
+### findByRawSQL
+**Use a raw SQL query to find results and factory them into models**
+
+```php
+CortexCollection findByRawSQL( string|array $query [, array $args = NULL [, int $ttl = 0 ]])
+```
+
+In case you want to write your own SQL query and factory the results into the appropriate model, you can use this method. I.e.:
+
+```php
+$news_records = $news->findByRawSQL('SELECT * from news where foo <= ? and active = ?',[42, 1]);
+```
+
 
 ### findone
 **Return first record (mapper object) that matches criteria**
@@ -1216,6 +1275,16 @@ See the guide about [Custom Field Handler](#custom-field-handler) for more detai
 null clear( string $key )
 ```
 
+
+### cleared
+**Returns whether the field was cleared or not**
+
+```php
+mixed initial( string $key )
+```
+
+If the field initially had data, but the data was cleared from the field, it returns that old cleared data. If no initial data was present or the field has not changed (cleared) `FALSE` is returned.
+
 ### clearFilter
 **Removes one or all relation filter**
 
@@ -1225,6 +1294,34 @@ null clearFilter([ string $key = null ])
 
 Removes only the given `$key` filter or all, if none was given.
 
+
+### compare
+**Compare new data against existing initial values of certain fields**
+
+```php
+null compare( array $fields, callback $new [, callback $old = null ])
+```
+
+This method compares new data in form of an assoc array of [field => value] against the initial field values and 
+calls a callback functions for *$new* and *$old* values, which can be used to prepare new / cleanup old data.
+
+Updated fields are set, the *$new* callback MUST return a value.
+
+```php
+$uploads=[
+    'profile_image' => 'temp_uploads/thats_me.jpg',
+    'pictures' => ['7bbn4ksw8m5', 'temp_uploads/random_pic.jpg']
+];
+$this->model->compare($uploads,function($filepath) {
+    // new files
+    return $this->handleFileUpload($filepath);
+}, function($fileId){
+    // old files
+    $this->deleteFile($fileId);
+});
+```
+
+In the example above, we handle multiple fields and compare their values with an incoming array for new data. For each new field value or changed / added array item value, the `$new` function is called. For existing data, that's not present in the new data anymore, the `$old` function is called. 
 
 ### copyfrom
 **Hydrate the mapper from hive key or given array**
@@ -1278,7 +1375,7 @@ All `has-many` relations are being returned as simple array lists of their prima
 **Count records that match criteria**
 
 ```php
-null count([ null $filter [, array $options = NULL [, int $ttl = 60 ]]])
+null count([ array $filter [, array $options = NULL [, int $ttl = 60 ]]])
 ```
 
 Just like `find()` but it only executes a count query instead of the real select.
@@ -1288,11 +1385,13 @@ Just like `find()` but it only executes a count query instead of the real select
 **add a virtual field that counts occurring relations**
 
 ```php
-null countRel( string $key)
+null countRel( string $key [, string $alias [, array $filter [, array $option]]])
 ```
 
 The `$key` parameter must be an existing relation field name. This adds a virtual counter field to your result,
-which contains the count/sum of the matching relations to the current record, which is named `count_{$key}`.
+which contains the count/sum of the matching relations to the current record, which is named `count_{$key}`, unless you define a custom `$alias` for it.
+
+It's also possible to define a `$filter` and `$options` to the query that's used for counting the relations.
 
 You can also use this counter for sorting, like in this tag-cloud sample:
 
@@ -1301,6 +1400,14 @@ $tags = new \Model\Tag();
 $tags->filter('news',['published = ? and publish_date <= ?', true, date('Y-m-d')]);
 $tags->countRel('news');
 $result = $tags->find(['deleted = ?',0], ['order'=>'count_news desc']);
+```
+
+This method also supports propagation, so you can define counters on nested relations pretty straightforward:
+
+```php
+// fetch all posts, with comments and count its likes (reactions of type "like") on each comment
+$post->countRel('comments.reaction','count_likes', ['type = ?', 'like']);
+$results = $post->find();
 ```
 
 
@@ -1501,6 +1608,14 @@ Cortex has( string $key [, array $filter = null [, array $options = null ]])
 
 See [Advanced Filter Techniques](#advanced-filter-techniques).
 
+### initial
+**Return initial field value**
+
+```php
+mixed initial( string $key )
+```
+
+Returns the initial data from a field, like it was fetched from the database, even if the field as changed afterwards. Array fields are decoded / unserialized properly before it's returned.
 
 ### mergeFilter
 **Glue multiple filter arrays together into one**
