@@ -1758,11 +1758,13 @@ but can also be fed with method parameters which would take precedence.
 **update a given date or time field with the current time**
 
 ```php
-null touch( string $key )
+null touch( string $key [, int $timestamp = NULL ])
 ```
 
 If `$key` is a defined field in the *$fieldConf* array, and is a type of date, datetime or timestamp,
 this method updates the field to the current time/date in the appropriate format.
+
+If a `$timestamp` is given, that value is used instead of the current time.
 
 
 ### valid
