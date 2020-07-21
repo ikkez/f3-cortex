@@ -13,13 +13,13 @@
  *              |  |    < |    <|  -__|-- __|
  *              |__|__|__||__|__|_____|_____|
  *
- *  Copyright (c) 2019 by ikkez
+ *  Copyright (c) 2020 by ikkez
  *  Christian Knuth <mail@ikkez.de>
  *  https://github.com/ikkez/F3-Sugar/
  *
  *  @package DB
- *  @version 1.6.0
- *  @date 03.02.2019
+ *  @version 1.7.0
+ *  @date 21.07.2020
  *  @since 24.04.2012
  */
 
@@ -1355,7 +1355,7 @@ class Cortex extends Cursor {
 
 	/**
 	 * Count records that match criteria
-	 * @param null $filter
+	 * @param array $filter
 	 * @param array $options
 	 * @param int $ttl
 	 * @return mixed
@@ -2182,7 +2182,7 @@ class Cortex extends Cursor {
 					// fetch relations
 					if ((is_array($rd) || $rd >= 0) && $type=preg_grep('/(belongs|has)-(to-)*(one|many)/',
 							array_keys($this->fieldConf[$key]))) {
-						$relType=$type[0];
+						$relType=current($type);
 						// cast relations
 						$val = (($relType == 'belongs-to-one' || $relType == 'belongs-to-many')
 							&& !$mp->exists($key)) ? NULL : $mp->get($key);
