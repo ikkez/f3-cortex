@@ -8,17 +8,18 @@ Cortex is a multi-engine ActiveRecord ORM / ODM that offers easy object persiste
 
   - It handles SQL, Jig and MongoDB database engines
   - Write queries in well-known SQL Syntax, they can be translated to Jig and Mongo
+  - automated SQL table creation and column extension from defined schema configurations
   - Easy prototyping with the SQL Fluid Mode, which makes your RDBMS schema-less and adds new table columns automatically
   - Support for models and collections
   - Relationships: link multiple models together to one-to-one, one-to-many and many-to-many associations
-  - smart-loading of related models (intelligent lazy and eager-loading without configuration)
+  - smart-loading of related models (intelligent lazy and eager-loading with zero configuration)
   - useful methods for nested filtering through relations 
-  - automatically setup the model tables from installer or migrate scripts by defined schemes
   - lots of event handlers and custom setter / getter preprocessors for all fields
   - define default values and nullable fields for NoSQL
+  - additional [validation plugin](https://github.com/ikkez/f3-validation-engine) available 
 
-With Cortex you can create generic apps, that work with any DB of the users choice, no matter if it's Postgre, MongoDB or even none.
-You can also mash-up multiple engines, use them simultaneous or ~~link models of different DB engines together~~ (in development).
+With Cortex you can create generic apps, that work with any DB of the users choice, no matter if it's SQlite, PostgreSQL, MongoDB or even none.
+You can also mash-up multiple engines or use them simultaneously.
 
 It's great for fast and easy data abstraction and offers a bunch of useful filter possibilities.
 
@@ -65,7 +66,7 @@ It's great for fast and easy data abstraction and offers a bunch of useful filte
 
 ### System Requirements
 
-Cortex requires at least Fat-Free v3.4 and PHP 5.3.5. For some of the features, it also requires the F3 [SQL Schema Plugin](https://github.com/ikkez/f3-schema-builder/tree/master).
+Cortex requires at least Fat-Free v3.4 and PHP 5.4. For some of the features, it also requires the F3 [SQL Schema Plugin](https://github.com/ikkez/f3-schema-builder/tree/master).
 
 ### Install
 
@@ -105,7 +106,7 @@ $user->save();
 
 Alright, that wasn't very impressive. But now let's find this guy again:
 
-``` php
+```php
 $user->load(['mail = ?','jacky@email.com']);
 echo $user->name; // shouts out: Jack Ripper
 ```
@@ -118,7 +119,7 @@ $user->load(['name like ? AND (deleted = 0 OR rights > ?]', 'Jack%', 3));
 
 No need for complex criteria objects or confusing Mongo where-array constructions. It's just as simple as you're used to. Using a Jig DB will automatically translate that query into the appropriate Jig filter:
 
-``` php
+```php
 Array (
     [0] => (isset(@name) && preg_match(?,@name)) AND ( (isset(@deleted) && (@deleted = 0)) OR (isset(@rights) && @rights > ?) )
     [1] => /^Jack/
@@ -128,7 +129,7 @@ Array (
 
 And for MongoDB it translates into this:
 
-``` php
+```php
 Array (
     [$and] => Array (
         [0] => Array (
@@ -143,7 +144,8 @@ Array (
                 [1] => Array (
                     [rights] => Array (
                         [$gt] => 3
-)   )   )   )   )   )
+                    )
+)))))
 ```
 
 You can use all the fancy methods from Cursor, like `load`, `find`, `cast`, `next` or `prev`. More about filtering and all the other methods a little later.
@@ -153,7 +155,7 @@ You can use all the fancy methods from Cursor, like `load`, `find`, `cast`, `nex
 When you are prototyping some new objects or just don't want to bother with a table schema, while using Cortex along with a SQL DB backend, you can enable the SQL Fluid Mode.
 This way Cortex will create all necessary tables and columns automatically, so you can focus on writing your application code. It will try to guess the right data type, based on the given sample data. To enable the fluid mode, just pass a third argument to the object's constructor:
 
-``` php
+```php
 $user = new \DB\Cortex($db, 'users', TRUE);
 $user->name = 'John';            // varchar(256)
 $user->age = 25;                 // integer
@@ -170,7 +172,7 @@ This way it also creates data types of datetime, float, text (when `strlen > 255
 
 Using the Cortex class directly is easy for some CRUD operations, but to enable some more advanced features, you'll need to wrap Cortex into a Model class like this:
 
-``` php
+```php
 // file at app/model/user.php
 namespace Model;
 
@@ -183,7 +185,7 @@ class User extends \DB\Cortex {
 
 Now you can create your mapper object that easy:
 
-``` php
+```php
 $user = new \Model\Users();
 ```
 
@@ -196,7 +198,7 @@ If no `$table` is provided, Cortex will use the class name as table name.
 Cortex does not need that much configuration. But at least it would be useful to have setup the field configuration.
 This way it's able to follow a defined schema of your data entity and enables you to use some auto-installation routines (see [setup](#set-up)). It looks like this:
 
-``` php
+```php
 // file at app/model/user.php
 namespace Model;
 
@@ -223,21 +225,21 @@ class User extends \DB\Cortex {
     ],
     $db = 'DB',
     $table = 'users',
-    $primary = 'id',    // name of the primary key (auto-created), default: id
+    $primary = 'id';    // name of the primary key (auto-created), default: id
 }
 ```
 
-In the `$fieldConf` array, you can set data types (`type`), `nullable` flags and `default` values for your columns. With `index` and `unique`, you can even setup an index for the columns. Doing so enables you to install new Models into your SQL database, adds some nullable validation checks and the ability for defaults to the NoSQL engines (Jig and Mongo). This makes your models easy interchangeable along various databases using this loosely coupled field definitions. 
+In the `$fieldConf` array, you can set data types (`type`), `nullable` flags and `default` values for your columns. With `index` and `unique`, you can even setup an index for the columns. Doing so enables you to install new Models into your SQL database, adds some nullable validation checks and the ability for defaults to NoSQL engines. This makes your models easy interchangeable along various databases using this loosely coupled field definitions. 
 
-**You don't need to configure all fields this way.** If you are working on existing tables, the underlying SQL Mapper exposes the existing table schema. So if you don't need that install feature and your tables are already existing, then you can just skip the configuration for those fields, or just setup some of them (i.e. for fields with relations).
+**You don't need to configure all fields this way.** If you're working with existing tables, the underlying SQL Mapper exposes the existing table schema. So if you don't need that auto-installer feature, you can just skip the configuration for those fields, or just setup only those you need (i.e. for fields with relations).
 
 Because column data types are currently only needed for setting up the tables in SQL, it follows that [SQL Data Types Table](https://github.com/ikkez/f3-schema-builder/tree/master#column-class) from the required [SQL Schema Plugin](https://github.com/ikkez/f3-schema-builder/blob/master/lib/db/sql/schema.php).
 
 You may also extend this config array to have a place for own validation rules or whatever you like.
 
-The data type values are defined constants from the Schema Plugin. If you'd like to use some auto-completion in your IDE to find the right values, type in the longer path to the constants:
+The data type values are defined constants from the Schema Plugin. If you like to use some auto-completion in your IDE to find the right values, type in the longer path to the constants:
 
-``` php
+```php
 'type' => \DB\SQL\Schema::DT_TIMESTAMP,
 'default' => \DB\SQL\Schema::DF_CURRENT_TIMESTAMP,
 ```
@@ -251,17 +253,15 @@ Cortex comes with two own data types for handling array values in fields. Even w
 
 In example:
 
-``` php
+```php
 'colors' => [
-    'type' => self::DT_JSON
-    // or
-    'type' => 'JSON'
+    'type' => self::DT_JSON,
 ],
 ```
 
-Now you're able to save array data in your model field, which is json_encoded into a `text` field behind the scene (of course only when using a SQL backend).
+Now you're able to save array data in your model field, which is json_encoded into a `text` field behind the scene (when using a SQL backend).
 
-``` php
+```php
 $mapper->colors = ['red','blue','green'];
 ```
 
@@ -270,7 +270,7 @@ $mapper->colors = ['red','blue','green'];
 
 In case you need some more flexible configuration and don't want to hard-wire it, you can overload the Model class constructor to load its config from an `ini`-file or elsewhere. In example:
 
-``` php
+```php
 class User extends \DB\Cortex {
 
     function __construct() {
@@ -278,7 +278,7 @@ class User extends \DB\Cortex {
         $this->db = \Registry::get('DB');
         $f3 = \Base::instance();
         // load fields from .ini file
-        if(!$f3->exists('usermodel'))
+        if (!$f3->exists('usermodel'))
             $f3->config('app/models/usermodel.ini');
         foreach ($f3->get('usermodel') as $key => $val)
             $this->{$key} = $val;
@@ -311,17 +311,17 @@ You can also define deep nested fields using a **dot** as separator: `$news->fie
 
 ### Set up
 
-This method tries to create the SQL DB tables you need to run your Cortex object. It also adds just missing fields to already existing tables.
+This method creates the SQL DB tables you need to run your Cortex model. **It also adds just missing fields to already existing tables.**
 
 If your Model has a valid field configuration, you are able to run this installation method:
 
-``` php
+```php
 \Model\User::setup();
 ``` 
 
-If you have no model class you need to provide all parameters the setup method has.
+If you have no model class, you need to provide all of the setup method's parameters.
 
-``` php
+```php
 $fields = [
     'name' => ['type' => \DB\SQL\Schema::DT_TEXT],
     'mail' => ['type' => \DB\SQL\Schema::DT_INT4],
@@ -335,7 +335,7 @@ $fields = [
 
 This method completely removes the specified table from the used database. So handle with care. 
 
-``` php
+```php
 // With Model class
 \Model\User::setdown();
 
@@ -346,7 +346,7 @@ This method completely removes the specified table from the used database. So ha
 
 ## Relations
 
-With Cortex you can create associations between multiple Models. By linking them together, you can create all common relationships you need for smart and easy persistence.
+With Cortex you can create associations between multiple models. By linking them together, you can create all common relationships you need for smart and easy persistence.
 
 ### Setup the linkage
 
@@ -402,7 +402,7 @@ Whereas `has-*` definitions are just virtual fields which are going to query the
 
 For **belongs-to-one** and **belongs-to-many**
 
-```
+```php
 'realTableField' => [
     'relationType' => '\Namespace\ClassName',
 ],
@@ -412,7 +412,7 @@ Defining a foreign key for `belongs-to-*` is optional. The default way is to use
 
 For **has-one** and **has-many**
 
-```
+```php
 'virtualField' => [
     'relationType' => ['\Namespace\ClassName','foreignKey'],
 ],
@@ -424,29 +424,29 @@ The foreign key is the field name you used in the counterpart model to define th
 
 There is one special case for many-to-many relations: here you use a `has-many` type on both models, which implies that there must be a 3rd pivot table that will be used for keeping the foreign keys that binds everything together. Usually Cortex will auto-create that table upon [setup](#set-up) method, using an auto-generated table name. If you like to use a custom name for that joining-table, add a 3rd parameter to the config array of *both* models, i.e.:
 
-```
+```php
 'tags' => [
-    'has-many' => ['\Model\Tag','news','news_tags'],
+    'has-many' => [\Model\Tag::class,'news','news_tags'],
 ],
 ```
 
 By default the primary key is used as reference for the record in the pivot table. In case you need to use a different field for the primary key, so can set a custom `localKey`.
 
-```
+```php
 'tag_key' => [
     'type' => \DB\SQL\Schema::DT_VARCHAR128,
 ],
 'tags' => [
-    'has-many' => ['\Model\Tag','news','news_tags'
-        'localKey'=> 'tag_key'
+    'has-many' => [\Model\Tag::class,'news','news_tags',
+        'localKey' => 'tag_key'
     ],
 ],
 ```
 
 For a custom relation key (foreign key) use `relPK`:
-```
+```php
 'tags' => [
-    'has-many' => ['\Model\Tag','news','news_tags'
+    'has-many' => [\Model\Tag::class,'news','news_tags',
         'relPK'=> 'news_id'
     ],
 ],
@@ -458,19 +458,20 @@ For a custom relation key (foreign key) use `relPK`:
 If you're working with an existing database table, or want to use own field names for the column in the pivot table, you can set those up with the `relField` option:
 
 I.e. in the news model:
-```
+
+```php
 'tags' => [
-    'has-many' => ['\Model\Tag','news','news_tags'
-        'relField'=> 'news_id'
+    'has-many' => [\Model\Tag::class,'news','news_tags',
+        'relField' => 'news_id'
     ],
 ],
 ```
 
 and in the tag model:
 
-```
+```php
 'news' => [
-    'has-many' => ['\Model\News','tags','news_tags',
+    'has-many' => [\Model\News::class,'tags','news_tags',
         'relField' => 'tag_id'
     ],
 ],
@@ -480,47 +481,70 @@ That means that the 3rd pivot table constains `news_id` and `tag_id` fields.
 
 ### Working with Relations
 
-Okay finally we come to the cool part. When configuration is done and setup executed, you're ready to use the following make-my-dev-life-easier methods.
+Okay finally we come to the cool part. When configuration is done and setup executed, you're ready to go.
 
 #### one-to-one
 
-To save a relation:
+To create a new relation:
 
-``` php
+```php
+// load a specific author
 $author = new \AuthorModel();
-$author->load(['name = ?','Johnny English']);
+$author->load(['_id = ?', 2]);
 
+// create a new profile
 $profile = new ProfileModel();
 $profile->status_message = 'Hello World';
-$profile->author = $author; 
-// OR you can also just put in the id instead of the whole object here
-$profile->author = '521eedf5ec4df'; 
+
+// link author and profile together, just set the foreign model to the desired property 
+$profile->author = $author;
+ 
+// OR you can also just put in the id instead of the whole object here 
+// (means you don't need to load the author model upfront at all)
+$profile->author = 23;
+ 
 $profile->save();
 ```
 
+You can of course do it the other way around, starting from the author model:
+
+```php
+// create a new profile
+$profile = new ProfileModel();
+$profile->status_message = 'Hello World';
+$profile->save();
+
+// load a specific author and add that profile
+$author = new \AuthorModel();
+$author->load(['_id = ?', 2]);
+$author->profile = $profile;
+$author->save();
+```
+
 and to load it again:
-``` php
-$author->load();
+
+```php
+$author->load(['_id = ?', 23]);
 echo $author->profile->status_message; // Hello World
 
-$profile->load();
+$profile->load(['_id = ?', 1]);
 echo $profile->author->name; // Johnny English
 ```
 
 #### one-to-many, many-to-one
 
-Save an author to a news.
+Save an author to a news record.
 
-``` php
+```php
 $author->load(['name = ?','Johnny English']);
-$news->load(['_id = ?','521eedf5ed779']);
+$news->load(['_id = ?',42]);
 $news->author = $author; // set the object or the raw id
 $news->save();
 ```
 
 now you can get:
 
-``` php
+```php
 echo $news->author->name; // 'Johnny English'
 ```
 
@@ -528,7 +552,7 @@ The field `author` now holds the whole mapper object of the AuthorModel. So you 
 
 The getting all news by an author in the counterpart looks like this:
 
-``` php
+```php
 $author->load(['_id = ?', 42]);
 $author->news; // is now an array of NewsModel objects
 
@@ -542,7 +566,7 @@ When both models of a relation has a `has-many` configuration on their linkage f
 
 To save many collections to a model you've got several ways:
 
-``` php
+```php
 $news->load(['_id = ?',1]);
 
 // array of IDs from TagModel
@@ -564,7 +588,7 @@ $news->save();
  
 Now you can get all tags of a news entry:
  
-``` php
+```php
 $news->load(['_id = ?',1]);
 echo $news->tags[0]['title']; // Web Design
 echo $news->tags[1]['title']; // Responsive
@@ -572,7 +596,7 @@ echo $news->tags[1]['title']; // Responsive
 
 And all news that are tagged with *Responsive*:
 
-``` php
+```php
 $tags->load(['title = ?','Responsive']);
 echo $tags->news[0]->title; // '10 Responsive Images Plugins'
 ```
@@ -587,14 +611,14 @@ This is an unidirectional binding, because the counterpart wont know anything ab
 
 Saving works the same way like the other m:m type described above
 
-``` php
+```php
 $news->tags = [4,7]; // IDs of TagModel
 $news->save();
 ```
 
 and get them back:
 
-``` php
+```php
 $news->load(['_id = ?', 77]);
 echo $news->tags[0]->title; // Web Design
 echo $news->tags[1]->title; // Responsive
@@ -626,16 +650,17 @@ namespace Model;
 class User extends \DB\Cortex {
   protected $fieldConf = [
     'friends' => [
-      'has-many' => ['\Model\User','friends']
+      'has-many' => [\Model\User::class,'friends']
     ]
   ];
 }
 ```
 
 To use a different field name in the pivot table for the reference field, use `selfRefField` option:
+
 ```php
 'friends' => [
-  'has-many' => ['\Model\User','friends',
+  'has-many' => [\Model\User::class,'friends',
     'selfRefField' => 'friends_ref'
   ]
 ]
@@ -724,7 +749,7 @@ $mapper->onset('field',function($self, $val){
 
 You can also define these custom field preprocessors as a method within the class, named `set_*` or `get_*`, where `*` is the name of your field. In example:
 
-``` php
+```php
 class User extends \DB\Cortex {
     // [...]
         
@@ -749,7 +774,7 @@ class User extends \DB\Cortex {
 
 So setting these fields in your Model, like:
 
-``` php
+```php
 $user->password = 'secret';
 $user->mail = 'foo@bar.com';
 ```
@@ -870,7 +895,7 @@ The has method adds some conditions to a related field, that must be fulfilled i
 
 In other words: Let's find all news records that are tagged by "Responsive".
 
-``` php
+```php
 $news->has('tags', ['title = ?','Responsive']);
 $results = $news->find();
 echo $results[0]->title; // '10 Responsive Images Plugins'
@@ -882,7 +907,7 @@ The advantage of the "has" method is that you can also add a condition to the pa
 
 You can also add multiple has-conditions to different relations:
 
-``` php
+```php
 $news->has('tags', ['title = ?','Responsive']);
 $news->has('author', ['username = ?','ikkez']);
 $results = $news->find(['published = ?', 1], ['limit'=>3, 'order'=>'date DESC']);
@@ -896,7 +921,7 @@ If you like, you can also call them in a fluent style: `$news->has(...)->load(..
 
 The filter method is meant for limiting the results of relations. In example: load author x and only his news from 2014.
 
-``` php
+```php
 $author->filter('news', ['date > ?','2014-01-01']);
 $author->load(['username = ?', 'ikkez']);
 ```
@@ -910,14 +935,14 @@ Filter conditions are currently not inherited. That means if you recursively acc
 
 It is also possible to filter deep nested relations using the `.` dot style syntax. The following example finds all authors and only loads its news that are tagged with "Responsive":
 
-``` php
+```php
 $author->filter('news.tags', ['title = ?','Responsive']);
 $author->find();
 ```
 
 The same applies for the has filter. The next example is similar to the previous one, but this time, instead of finding all authors, it only returns authors that have written a news entry that was tagged with "Responsive":
 
-``` php
+```php
 $author->has('news.tags', ['title = ?','Responsive']);
 $author->find();
 ```
@@ -988,20 +1013,20 @@ If the table is not set, Cortex will use the `strtolower(get_class($this))` as t
 The array scheme is:
 
 ```php
-protected $fieldConf = array {
-    'fieldName' = array(
+protected $fieldConf = [
+    'fieldName' => [
         'type' => string
         'nullable' => bool
         'default' => mixed
         'index' => bool
         'unique' => bool
-    )
-};
+    ]
+]
 ```
 
 Get the whole list of possible types from the [Data Types Table](https://github.com/ikkez/f3-schema-builder/tree/master#column-class).
 
-*NB:* You can also add `'passThrough'=>true` in order to use the raw value in *type* as data type in case you need a custom type which is not available in the data types table. 
+*NB:* You can also add `'passThrough' => true` in order to use the raw value in *type* as data type in case you need a custom type which is not available in the data types table. 
  
 ### $ttl
 **default mapper schema ttl**, int = 60
@@ -1992,9 +2017,9 @@ This removes a part from the collection.
 
 * All relations are lazy loaded to save performance. That means they won't get loaded until you access them by the linked property or cast the whole parent model.
 
-* lazy loading within a result collection will **automatically** invoke the eager loading of that property to the whole set. The results are saved to an [Identity Map](http://martinfowler.com/eaaCatalog/identityMap.html) to relieve the strain on further calls. I called this _smart loading_ and is used to get around the [1+N query problem](http://www.phabricator.com/docs/phabricator/article/Performance_N+1_Query_Problem.html) with no need for extra configuration.
+* lazy loading within a result collection will **automatically** invoke the eager loading of that property **to the whole set**. The results are saved to an [Identity Map](https://martinfowler.com/eaaCatalog/identityMap.html) to relieve the strain on further calls. I called this _smart loading_ and is used to get around the [1+N query problem](https://secure.phabricator.com/book/phabcontrib/article/n_plus_one/) with no need for extra configuration.
 
-* If you need to use a primary key in SQL which is different from `id` (for any legacy reason), you can use the `$primary` class property to set it to something else. You should use the new custom pkey in your queries now. Doing so will limit your app to SQL engines.
+* If you need to use a primary key in SQL that is different from `id` (for any legacy reason), you can use the `$primary` class property to set it to something else. You should use the new custom pkey in your queries now. Doing so will limit your app to SQL engines.
 
 * to get the id of any record use `$user->_id;`. This even works if you have setup a custom primary key.
 
