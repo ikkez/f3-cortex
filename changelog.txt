@@ -1,6 +1,6 @@
 CHANGELOG - Cortex ORM
 
-1.7.0 (06.12.2020)
+1.7.1 (06.12.2020)
 *	fix primary key replacement in filter condition for custom pkeys, #106
 *	fix dry/valid after factoring new mapper from raw SQL, #109
 *	add feature to target nested fields in compare method
