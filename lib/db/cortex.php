@@ -2484,14 +2484,27 @@ class Cortex extends Cursor {
 	 * compare new data as an assoc array of [field => value] against the initial field values
 	 * callback functions for $new and $old values can be used to prepare new / cleanup old data
 	 * updated fields are set, $new callback must return a value
+	 * it's also possible to target children fields, i.e. [fieldA.fieldB[2].foo => value]
 	 * @param array $fields
 	 * @param callback $new
 	 * @param callback $old
 	 */
 	function compare($fields, $new, $old=NULL) {
 		foreach ($fields as $field=>$data) {
+			$partial=false;
+			$rootKey=false;
+			$parts = preg_split('/(\[.*?\]\.|\.)/', $field, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
+			if (count($parts) > 1) {
+				$rootKey=array_shift($parts);
+				$partial=implode($parts);
+			}
 			if (!empty($data)) {
-				$init = $this->initial($field);
+				if ($partial) {
+					$init = $this->initial($rootKey);
+					$init = \Base::instance()->ref($partial,false,$init);
+				} else {
+					$init = $this->initial($field);
+				}
 				if (is_array($data)) {
 					// cleanup old values
 					if ($init && $old) {
@@ -2514,15 +2527,32 @@ class Cortex extends Cursor {
 					if ($new)
 						$data = call_user_func($new,$data);
 				}
-			} elseif ($old && ($old_values = $this->cleared($field))) {
-				// cleanup all
-				if (!is_array($old_values))
-					$old_values=[$old_values];
-				foreach ($old_values as $val)
-					call_user_func($old,$val);
+			} elseif ($old) {
+				if ($partial) {
+					$old_values = $this->initial($rootKey);
+					$field_value = \Base::instance()->ref($partial,false,$old_values);
+					$old_values = !empty($field_value) && empty($data) ? $field_value : null;
+				} else {
+					$old_values = $this->cleared($field);
+				}
+				if ($old_values) {
+					// cleanup all
+					if (!is_array($old_values))
+						$old_values=[$old_values];
+					foreach ($old_values as $val)
+						call_user_func($old,$val);
+				}
 			}
-			if ($data)
-				$this->set($field, $data);
+			if ($data) {
+				if ($partial) {
+					$rootFieldData = $this->get($rootKey);
+					$fieldData = &\Base::instance()->ref($partial,true,$rootFieldData);
+					$fieldData = $data;
+					$this->set($rootKey, $rootFieldData);
+				} else {
+					$this->set($field, $data);
+				}
+			}
 		}
 	}
 
