@@ -923,7 +923,7 @@ class Cortex extends Cursor {
 	 * @param int $ttl
 	 * @return static[]
 	 */
-	protected function findByRawSQL($query, $args=NULL, $ttl=0) {
+	public function findByRawSQL($query, $args=NULL, $ttl=0) {
 		$result = $this->db->exec($query, $args, $ttl);
 		$cx = new CortexCollection();
 		foreach($result as $row) {
@@ -2258,6 +2258,7 @@ class Cortex extends Cursor {
 		if (is_array($mapper)) {
 			$mp = clone($this->mapper);
 			$mp->reset();
+			$mp->query=[$mp];
 			$cx = $this->factory($mp);
 			$cx->copyfrom($mapper);
 		} else {
