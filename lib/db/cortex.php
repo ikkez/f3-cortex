@@ -801,7 +801,7 @@ class Cortex extends Cursor {
 			}
 			$this->hasCond = null;
 		}
-		$filter = $this->queryParser->prepareFilter($filter, $this->dbsType, $this->db, $this->fieldConf);
+		$filter = $this->queryParser->prepareFilter($filter, $this->dbsType, $this->db, $this->fieldConf, $this->primary);
 		if ($this->dbsType=='sql') {
 			$qtable = $this->db->quotekey($this->table);
 			if (isset($options['order']) && $this->db->driver() == 'pgsql')
@@ -1224,7 +1224,7 @@ class Cortex extends Cursor {
 	 * @return bool
 	 */
 	public function erase($filter = null) {
-		$filter = $this->queryParser->prepareFilter($filter, $this->dbsType, $this->db);
+		$filter = $this->queryParser->prepareFilter($filter, $this->dbsType, $this->db,null,$this->primary);
 		if (!$filter) {
 			if ($this->emit('beforeerase')===false)
 				return false;
@@ -1427,7 +1427,7 @@ class Cortex extends Cursor {
 								$filter,$options);
 						}
 						$filter = $this->queryParser->prepareFilter($filter,
-							$this->dbsType, $this->db, $this->fieldConf);
+							$this->dbsType, $this->db, $this->fieldConf, $this->primary);
 						$crit = array_shift($filter);
 						if (count($filter)>0)
 							$this->preBinds=array_merge($this->preBinds,$filter);
@@ -1452,7 +1452,7 @@ class Cortex extends Cursor {
 						$filter = $this->mergeWithRelFilter($key,[$crit]);
 						$filter[0] = $this->queryParser->sql_prependTableToFields($filter[0],$fAlias);
 						$filter = $this->queryParser->prepareFilter($filter,
-							$this->dbsType, $this->db, $this->fieldConf);
+							$this->dbsType, $this->db, $this->fieldConf, $this->primary);
 						$crit = array_shift($filter);
 						if (count($filter)>0)
 							$this->preBinds=array_merge($this->preBinds,$filter);
@@ -2645,9 +2645,10 @@ class CortexQueryParser extends \Prefab {
 	 * @param string $engine
 	 * @param object $db
 	 * @param null $fieldConf
+	 * @param string $primary
 	 * @return array|bool|null
 	 */
-	public function prepareFilter($cond, $engine, $db, $fieldConf=null) {
+	public function prepareFilter($cond, $engine, $db, $fieldConf=null, $primary='id') {
 		if (is_null($cond)) return $cond;
 		if (is_string($cond))
 			$cond = [$cond];
@@ -2697,7 +2698,7 @@ class CortexQueryParser extends \Prefab {
 				if (!$f3->exists('CORTEX.quoteConditions',$qc) || $qc)
 					$where = $this->sql_quoteCondition($where,$db);
 				// preserve identifier
-				$where = preg_replace('/(?!\B)_id/', 'id', $where);
+				$where = preg_replace('/(?!\B)_id/', $primary, $where);
 				if ($db->driver() == 'pgsql')
 					$where = preg_replace('/\s+like\s+/i', ' ILIKE ', $where);
 				$parts = $this->splitLogical($where);
