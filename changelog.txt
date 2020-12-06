@@ -1,5 +1,11 @@
 CHANGELOG - Cortex ORM
 
+1.7.0 (06.12.2020)
+*	fix primary key replacement in filter condition for custom pkeys, #106
+*	fix dry/valid after factoring new mapper from raw SQL, #109
+*	add feature to target nested fields in compare method
+*	use static return doc hint for improved IDE autocompletion
+
 1.7.0 (21.07.2020)
 *	new: field mask feature for cast
 *	new method findByRawSQL() to use find with a raw sql query
@@ -18,7 +24,7 @@ CHANGELOG - Cortex ORM
 *	refactored save / insert / update event handling, #95
 *	fixed: getAll for raw results with empty items
 *	fixed: lost filter pre-binds and count fields on load method, #99
-*	fixed: preserve logical || operator in filter condition for supported engines, #98
+*	fixed: preserve logical || operator in filter condition for supported engines, #98
 *	fixed: respect nullable boolean fields when casting
 *	fixed: removed strtolower for tablename in setdown, #93
 *	Fixed an issue with missing pkeys on results that had a HAS-filter applied
@@ -158,7 +164,7 @@ CHANGELOG - Cortex ORM
 *	added $option parameter to filter() method
 *	support for custom primary fields in SQL
 *	Bug fix: belongs-to-one linkage with non-primary fields
-*	Bug fix: don't split DB functions in where condition 
+*	Bug fix: don't split DB functions in where condition
 *	Bug fix: postgreSQL GROUP BY clause
 *	compatibility fixes for F3 v.3.2.2
 *	added NOT LIKE operator to query parser
