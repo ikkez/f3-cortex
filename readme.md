@@ -1633,6 +1633,12 @@ Cortex has( string $key [, array $filter = null [, array $options = null ]])
 
 See [Advanced Filter Techniques](#advanced-filter-techniques).
 
+### orHas
+**Add has-conditional filter with OR operator to previous condition**
+
+Same as has filter, but chains with a logical OR to the previous condition.
+
+
 ### initial
 **Return initial field value**
 

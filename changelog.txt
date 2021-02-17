@@ -1,5 +1,8 @@
 CHANGELOG - Cortex ORM
 
+1.7.2 (18.02.2021)
+*	new: orHas feature
+
 1.7.1 (06.12.2020)
 *	fix primary key replacement in filter condition for custom pkeys, #106
 *	fix dry/valid after factoring new mapper from raw SQL, #109
