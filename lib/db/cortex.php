@@ -725,7 +725,7 @@ class Cortex extends Cursor {
 					$hasCond = [null,null];
 				}
 				list($has_filter,$has_options) = $hasCond;
-				$isOrCondition = $has_options['OR'] ?? FALSE;
+				$isOrCondition = isset($has_options['OR']) ? $has_options['OR'] : FALSE;
 				$type = $this->fieldConf[$key]['relType'];
 				$fromConf = $this->fieldConf[$key][$type];
 				switch($type) {
