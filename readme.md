@@ -304,7 +304,7 @@ rights_level.default = 3
 
 #### Blacklist Fields
 
-The `field()` method can be used to return the available fields on the current model. If called with one simple array argument like `$news->fields(['title']);`, it'll apply the provided elements as a whitelist to the whole mapper. For the rest of its lifetime it'll only hydrate the fields you permitted here.
+The `fields()` method can be used to return the available fields on the current model. If called with one simple array argument like `$news->fields(['title']);`, it'll apply the provided elements as a whitelist to the whole mapper. For the rest of its lifetime it'll only hydrate the fields you permitted here.
 If called with a 2nd argument like `$news->fields(['author']),true);`, the array is going to be uses as a blacklist instead, and restrict the access to the provided fields.
 You can also define deep nested fields using a **dot** as separator: `$news->fields(['tags.title']);` will only hydrate the tag title in your news model and wont load or save any other field that exists in your tag model. Subsequent calls to the `fields` method will merge with all already defined blacklist/whitelist definitions.
 
