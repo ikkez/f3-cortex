@@ -10,10 +10,10 @@ class Cortex extends Controller
 		$f3->set('QUIET', false);
 
 		$dbs = array(
-//			'sql-mysql' => new \DB\SQL('mysql:host=localhost;port=3306;dbname=fatfree', 'fatfree', ''),
-			'sql-sqlite' => new \DB\SQL('sqlite:data/sqlite.db'),
-//			'sql-pgsql' => new \DB\SQL('pgsql:host=localhost;dbname=fatfree', 'fatfree', 'fatfree'),
-//			'jig' => new \DB\Jig('data/',\DB\Jig::FORMAT_JSON,true),
+			'sql-sqlite' => new \DB\SQL('sqlite:data/sqlite-cortex.db'),
+			'sql-mysql' => new \DB\SQL('mysql:host=f3-mysql;port=3306;dbname=fatfree', 'fatfree', 'fatfree'),
+			'sql-pgsql' => new \DB\SQL('pgsql:host=f3-pgsql;dbname=fatfree', 'fatfree', 'fatfree'),
+			'jig' => new \DB\Jig('data/',\DB\Jig::FORMAT_JSON,true),
 //			'mongo' => new \DB\Mongo('mongodb://localhost:27017', 'testdb'),
 //			'sqlsrv2008' => new \DB\SQL('sqlsrv:SERVER=WIN7\SQLEXPRESS2008;Database=fatfree','sa', 'fatfree'),
 //			'sqlsrv2012' => new \DB\SQL('sqlsrv:SERVER=WIN7\SQLEXPRESS2012;Database=fatfree','sa', 'fatfree'),
