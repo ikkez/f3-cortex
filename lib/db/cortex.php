@@ -1939,7 +1939,7 @@ class Cortex extends Cursor {
 				$fields[$key]['type'] = self::DT_JSON;
 				$result = $this->getRaw($key);
 				if ($this->dbsType == 'sql')
-					$result = json_decode($result, true);
+					$result = json_decode($result?:'', true);
 				if (!is_array($result))
 					$this->fieldsCache[$key] = $result;
 				else {
@@ -1990,7 +1990,7 @@ class Cortex extends Cursor {
 					if ($fields[$key]['type'] == self::DT_SERIALIZED)
 						$this->fieldsCache[$key] = unserialize($this->mapper->{$key});
 					elseif ($fields[$key]['type'] == self::DT_JSON)
-						$this->fieldsCache[$key] = json_decode($this->mapper->{$key},true);
+						$this->fieldsCache[$key] = json_decode($this->mapper->{$key}?:'',true);
 				}
 				if ($this->exists($key) && preg_match('/BOOL/i',$fields[$key]['type'])) {
 					$field_val = $this->mapper->{$key};
@@ -2213,7 +2213,7 @@ class Cortex extends Cursor {
 							if ($this->fieldConf[$key]['type'] == self::DT_SERIALIZED)
 								$val=unserialize($mp->mapper->{$key});
 							elseif ($this->fieldConf[$key]['type'] == self::DT_JSON)
-								$val=json_decode($mp->mapper->{$key}, true);
+								$val=json_decode($mp->mapper->{$key}?:'', true);
 						}
 						if ($this->exists($key)
 							&& preg_match('/BOOL/i',$this->fieldConf[$key]['type'])) {
@@ -2310,9 +2310,9 @@ class Cortex extends Cursor {
 		foreach ($srcfields as $key => $val) {
 			if (isset($this->fieldConf[$key]) && isset($this->fieldConf[$key]['type'])) {
 				if ($this->fieldConf[$key]['type'] == self::DT_JSON && is_string($val))
-					$val = json_decode($val,true);
+					$val = json_decode($val?:'',true);
 				elseif ($this->fieldConf[$key]['type'] == self::DT_SERIALIZED && is_string($val))
-					$val = unserialize($val);
+					$val = unserialize($val?:'');
 			}
 			$this->set($key, $val);
 		}
@@ -3134,6 +3134,7 @@ class CortexCollection extends \ArrayIterator {
 		$this->append($model);
 	}
 
+	#[\ReturnTypeWillChange]
 	public function offsetSet($i, $val) {
 		$this->changed=true;
 		parent::offsetSet($i,$val);
@@ -3260,7 +3261,7 @@ class CortexCollection extends \ArrayIterator {
 				$order=empty($parts[1])?'ASC':$parts[1];
 				$col=$parts[0];
 				list($v1,$v2)=[$val1[$col],$val2[$col]];
-				if ($out=strnatcmp($v1,$v2)*
+				if ($out=strnatcmp($v1?:'',$v2?:'')*
 					((strtoupper($order)=='ASC')*2-1))
 					return $out;
 			}
