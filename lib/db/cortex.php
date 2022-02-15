@@ -2816,7 +2816,7 @@ class CortexQueryParser extends \Prefab {
 			function($match) use($db) {
 				if (!isset($match[1]))
 					return $match[0];
-				if (preg_match('/\b(AND|OR|IN|LIKE|NOT|HAVING|SELECT|FROM|WHERE)\b/i',$match[1]))
+				if (preg_match('/\b(AND|OR|IN|LIKE|NOT|HAVING|BETWEEN|SELECT|FROM|WHERE)\b/i',$match[1]))
 					return $match[1];
 				return $db->quotekey($match[1]);
 			}, $cond);
