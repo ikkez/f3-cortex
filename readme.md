@@ -50,7 +50,8 @@ It's great for fast and easy data abstraction and offers a bunch of useful filte
 	2. [Options Array](#options)
 7. [Advanced Filter Techniques](#advanced-filter-techniques)
 	1. [has](#has)
-	2. [filter](#filter)
+	2. [orHas](#orhas)
+	3. [filter](#filter)
 8. [Insight into aggregation](#insight-into-aggregation)
 	1. [Counting Relations](#counting-relations)
 	2. [Virtual Fields](#virtual-fields)
@@ -916,6 +917,10 @@ $results = $news->find(['published = ?', 1], ['limit'=>3, 'order'=>'date DESC'])
 Now you only load the last 3 published news written by me, which were tagged "Responsive", sorted by release date. ;)
 
 If you like, you can also call them in a fluent style: `$news->has(...)->load(...);`.
+
+### orHas
+
+Similar to has method, but adds the has condition with an OR operator.
 
 ### filter
 

@@ -1,5 +1,12 @@
 CHANGELOG - Cortex ORM
 
+1.7.4 (15.02.2022)
+*	fix SQL function usage with multiple parameters, #110
+*	php 8.1 fixes
+
+1.7.3 (15.03.2021)
+*	fix: getAll property on non-existing fields
+
 1.7.2 (18.02.2021)
 *	new: orHas feature
 
