@@ -2723,9 +2723,14 @@ class CortexQueryParser extends \Prefab {
 					list($parts, $args) = $this->convertNamedParams($parts, $args);
 				$ncond = [];
 				foreach ($parts as &$part) {
-					// enhanced IN handling
-					if (is_int(strpos($part, '?'))) {
+					// arg handling
+					$argCount = substr_count($part, '?');
+					if ($argCount > 1) {
+						// function parameters like `foo(?,?,?)`
+						$ncond = array_merge($ncond, array_splice($args, 0, $argCount));
+					} elseif ($argCount === 1) {
 						$val = array_shift($args);
+						// enhanced IN operator args expansion
 						if (is_int($pos = strpos($part, ' IN ?'))) {
 							if ($val instanceof CortexCollection)
 								$val = $val->getAll('_id',TRUE);
@@ -2734,7 +2739,9 @@ class CortexQueryParser extends \Prefab {
 							$bindMarks = str_repeat('?,',count($val) - 1).'?';
 							$part = substr($part, 0, $pos).' IN ('.$bindMarks.') ';
 							$ncond = array_merge($ncond, $val);
-						} elseif($val === null &&
+						}
+						// comparison against NULL
+						elseif($val === null &&
 							preg_match('/((?:\S[\w\-]+\S.?)+)\s*'.
 								'(!?==?)\s*(?:\?|:\w+)/i',$part,$match)) {
 							$part = ' '.$match[1].' IS '.($match[2][0]=='!'?'NOT ':'').'NULL ';

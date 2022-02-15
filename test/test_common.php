@@ -199,6 +199,21 @@ class Test_Common {
 				10,20,30,40,50,60),
 			'merge multiple filters');
 
+		$qp = new \DB\CortexQueryParser();
+
+		$test->expect(
+			$qp->prepareFilter(['foo > bar'],'sql', $f3->DB) === ['`foo` > `bar`'],
+			'auto-escape fields'
+		);
+		$test->expect(
+			$qp->prepareFilter(['created_at > DATE_SUB(NOW(), INTERVAL 1 DAY)'],'sql', $f3->DB) === ['`created_at` > DATE_SUB(NOW(), INTERVAL 1 DAY)'],
+			'respect function when auto-escaping'
+		);
+		$test->expect(
+			$qp->prepareFilter(['foo(?,?,3,?)',1,2,4],'sql', $f3->DB) === ['foo(?,?,3,?)',1,2,4],
+			'query parser: correct function args'
+		);
+
 		///////////////////////////////////
 		return $test->results();
 	}
