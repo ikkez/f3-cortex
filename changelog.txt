@@ -1,5 +1,9 @@
 CHANGELOG - Cortex ORM
 
+1.7.5 (27.02.2022)
+*	fix: compare feature did not cleanup correctly old initial array values
+*	add BETWEEN to to exclude list
+
 1.7.4 (15.02.2022)
 *	fix SQL function usage with multiple parameters, #110
 *	php 8.1 fixes
