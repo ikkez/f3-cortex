@@ -18,8 +18,8 @@
  *  https://github.com/ikkez/F3-Sugar/
  *
  *  @package DB
- *  @version 1.7.4
- *  @date 15.02.2022
+ *  @version 1.7.5
+ *  @date 27.02.2022
  *  @since 24.04.2012
  */
 
@@ -2507,18 +2507,20 @@ class Cortex extends Cursor {
 	 * @param callback $old
 	 */
 	function compare($fields, $new, $old=NULL) {
+		/** @var \Base $f3 */
+		$f3 = \Base::instance();
 		foreach ($fields as $field=>$data) {
 			$partial=false;
 			$rootKey=false;
 			$parts = preg_split('/(\[.*?\]\.|\.)/', $field, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
 			if (count($parts) > 1) {
 				$rootKey=array_shift($parts);
-				$partial=implode($parts);
+				$partial=ltrim(implode($parts),'.');
 			}
 			if (!empty($data)) {
 				if ($partial) {
 					$init = $this->initial($rootKey);
-					$init = \Base::instance()->ref($partial,false,$init);
+					$init = $f3->ref($partial,false,$init);
 				} else {
 					$init = $this->initial($field);
 				}
@@ -2541,14 +2543,27 @@ class Cortex extends Cursor {
 					// changed
 					if ($init !== $data && $old && $init)
 						call_user_func($old,$init);
-					if ($new)
+					if ($init !== $data && $new)
 						$data = call_user_func($new,$data);
 				}
 			} elseif ($old) {
 				if ($partial) {
 					$old_values = $this->initial($rootKey);
-					$field_value = \Base::instance()->ref($partial,false,$old_values);
-					$old_values = !empty($field_value) && empty($data) ? $field_value : null;
+					// cleanup old in array context
+					if (strpos($partial,'[')!==FALSE) {
+						$node = substr($partial,0,strpos($partial,'['));
+						$field_value = $f3->ref($node,false,$old_values);
+						$old_values = [];
+						if ($field_value) {
+							$fkey = $parts[count($parts)-1];
+							foreach ($field_value as $v)
+								if (!empty($v[$fkey]))
+									$old_values[] = $v[$fkey];
+ 						}
+					} else {
+						$field_value = $f3->ref($partial,false,$old_values);
+						$old_values = !empty($field_value) ? $field_value : null;
+					}
 				} else {
 					$old_values = $this->cleared($field);
 				}
@@ -2563,9 +2578,10 @@ class Cortex extends Cursor {
 			if ($data) {
 				if ($partial) {
 					$rootFieldData = $this->get($rootKey);
-					$fieldData = &\Base::instance()->ref($partial,true,$rootFieldData);
+					$fieldData = &$f3->ref($partial,true,$rootFieldData);
 					$fieldData = $data;
 					$this->set($rootKey, $rootFieldData);
+					unset($fieldData);
 				} else {
 					$this->set($field, $data);
 				}
