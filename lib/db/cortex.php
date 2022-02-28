@@ -2550,9 +2550,9 @@ class Cortex extends Cursor {
 				if ($partial) {
 					$old_values = $this->initial($rootKey);
 					// cleanup old in array context
-					if (strpos($partial,'[')!==FALSE) {
+					if (($pos=strpos($partial,'['))!==FALSE) {
 						$node = substr($partial,0,strpos($partial,'['));
-						$field_value = $f3->ref($node,false,$old_values);
+						$field_value = $pos === 0 ? $old_values : $f3->ref($node,false,$old_values);
 						$old_values = [];
 						if ($field_value) {
 							$fkey = $parts[count($parts)-1];
