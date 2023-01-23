@@ -831,7 +831,7 @@ class Cortex extends Cursor {
 					if (empty($fields))
 						// Select at least one field, ideally the grouping fields or sqlsrv fails
 						$fields=preg_replace('/HAVING.+$/i','',$options['group']);
-					if (preg_match('/mssql|dblib|sqlsrv/',$this->engine))
+					if (preg_match('/mssql|dblib|sqlsrv/',$this->db->driver()))
 						$fields='TOP 100 PERCENT '.$fields;
 				}
 				if (!$count)
