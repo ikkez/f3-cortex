@@ -937,7 +937,7 @@ class Cortex extends Cursor {
 
 	/**
 	 * Retrieve first object that satisfies criteria
-	 * @param null  $filter
+	 * @param array|null  $filter
 	 * @param array $options
 	 * @param int   $ttl
 	 * @return bool
