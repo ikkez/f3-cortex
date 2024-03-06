@@ -1,5 +1,13 @@
 CHANGELOG - Cortex ORM
 
+1.7.7 (06.03.2024)
+*   fix #121: wrong condition variable used for orHas check
+*   fix #125: ensure cached rel obj isn't altered by whitelist
+*   chore: fix load() first parameter type
+
+1.7.6 (23.01.2023)
+*   fix: wrong driver method used
+
 1.7.5 (27.02.2022)
 *	fix: compare feature did not cleanup correctly old initial array values
 *	add BETWEEN to to exclude list

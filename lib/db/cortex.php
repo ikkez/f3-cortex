@@ -13,14 +13,14 @@
  *              |  |    < |    <|  -__|-- __|
  *              |__|__|__||__|__|_____|_____|
  *
- *  Copyright (c) 2022 by ikkez
+ *  Copyright (c) 2024 by ikkez
  *  Christian Knuth <mail@ikkez.de>
  *  https://github.com/ikkez/F3-Sugar/
  *
  *  @package DB
- *  @version 1.7.5
- *  @date 27.02.2022
- *  @since 24.04.2012
+ *  @version 1.7.7
+ *  @date 06.03.2024
+ *  @since 22.01.2013
  */
 
 namespace DB;
