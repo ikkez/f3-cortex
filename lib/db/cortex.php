@@ -2102,10 +2102,12 @@ class Cortex extends Cursor {
 			if (!$rel instanceof Cortex)
 				trigger_error(self::E_WRONG_RELATION_CLASS,E_USER_ERROR);
 			\Registry::set($relName, $rel);
-		}
-		// restrict fields of related mapper
-		if(!empty($key) && isset($this->relWhitelist[$key])) {
-			if (isset($this->relWhitelist[$key][0]))
+        }
+        // restrict fields of related mapper
+        if(!empty($key) && isset($this->relWhitelist[$key])) {
+            // ensure not to alter cached object
+            $rel = clone $rel;
+            if (isset($this->relWhitelist[$key][0]))
 				$rel->fields($this->relWhitelist[$key][0],false);
 			if (isset($this->relWhitelist[$key][1]))
 				$rel->fields($this->relWhitelist[$key][1],true);

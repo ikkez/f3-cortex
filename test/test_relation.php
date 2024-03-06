@@ -55,14 +55,17 @@ class Test_Relation {
 		$author_pk = (is_int(strpos($type,'sql'))?$ac['primary']:'_id');
 
 		$author->name = 'Johnny English';
+		$author->mail = 'user1@domain.com';
 		$author->save();
 		$author_id[] = $author->_id;
 		$author->reset();
 		$author->name = 'Ridley Scott';
+		$author->mail = 'user2@domain.com';
 		$author->save();
 		$author_id[] = $author->_id;
 		$author->reset();
 		$author->name = 'James T. Kirk';
+		$author->mail = 'user3@domain.com';
 		$author->save();
 		$author_id[] = $author->_id;
 		$author->reset();
@@ -71,7 +74,7 @@ class Test_Relation {
 		$allauthors = $this->getResult($allauthors);
 		$test->expect(
 			json_encode($allauthors) ==
-			'[{"name":"Johnny English"},{"name":"Ridley Scott"},{"name":"James T. Kirk"}]',
+			'[{"name":"Johnny English","mail":"user1@domain.com"},{"name":"Ridley Scott","mail":"user2@domain.com"},{"name":"James T. Kirk","mail":"user3@domain.com"}]',
 			$type.': all AuthorModel items created'
 		);
 
@@ -434,6 +437,23 @@ class Test_Relation {
 			in_array($author_id[0],$ids) && in_array($author_id[2],$ids),
 			$type.': self-ref relation collection merging'
 		);
+
+        $news = new NewsModel();
+        $news->load([$news_pk.' = ?', $news_id[1]]);
+        $news->author = $author_id[1];
+        $news->save();
+
+        $news1 = new NewsModel();
+        $news1->fields([$news_pk, "author.name"]);
+        $news1->load([$news_pk.' = ?', $news_id[0]]);
+
+        $news2 = new NewsModel();
+        $news2->load([$news_pk.' = ?', $news_id[1]]);
+
+        $test->expect(
+            $news1->author->mail === null && $news2->author->mail === 'user2@domain.com',
+            $type.': whitelist on relations does not persist'
+        );
 
 		///////////////////////////////////
 		return $test->results();
