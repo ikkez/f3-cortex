@@ -1091,7 +1091,7 @@ class Cortex extends Cursor {
 			$rel = $fieldConf[0]::resolveConfiguration();
 			$toConf = $fieldConf[0]::resolveRelationConf($rel['fieldConf'][$fieldConf[1]])['has-many'];
 			$hasJoin[] = $this->_sql_left_join($toConf['relField'],$mmTable,$fieldConf['relPK'],$relTable);
-			$glue = isset($cond[1]['OR']) && $cond[1]['OR']===TRUE ? 'OR' : 'AND';
+			$glue = isset($hasCond[1]['OR']) && $hasCond[1]['OR']===TRUE ? 'OR' : 'AND';
 			$this->_sql_mergeRelCondition($hasCond,$relTable,$filter,$options, $glue);
 		}
 		return $hasJoin;
