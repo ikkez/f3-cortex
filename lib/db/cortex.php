@@ -922,7 +922,7 @@ class Cortex extends Cursor {
 	 * @param $sql
 	 * @param null $args
 	 * @param int $ttl
-	 * @return static[]
+	 * @return CortexCollection
 	 */
 	public function findByRawSQL($query, $args=NULL, $ttl=0) {
 		$result = $this->db->exec($query, $args, $ttl);
