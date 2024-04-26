@@ -920,7 +920,7 @@ class Cortex extends Cursor {
 	/**
 	 * use a raw sql query to find results and factory them into models
 	 * @param $sql
-	 * @param null $args
+	 * @param array|null $args
 	 * @param int $ttl
 	 * @return static[]
 	 */
