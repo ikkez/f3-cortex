@@ -420,9 +420,8 @@ class Cortex extends Cursor {
 	 * @param null $table
 	 */
 	static public function setdown($db=null, $table=null) {
-		$self = get_called_class();
 		if (is_null($db) || is_null($table))
-			$df = $self::resolveConfiguration();
+			$df = static::resolveConfiguration();
 		if (!is_object($db=(is_string($db=($db?:$df['db']))?\Base::instance()->get($db):$db)))
             throw new \Exception(self::E_CONNECTION);
 		if (strlen($table=($table?:$df['table']))==0)
@@ -443,10 +442,9 @@ class Cortex extends Cursor {
 				if (array_key_exists($relConf[1],$rel['fieldConf']) && !is_null($relConf[1])
 					&& key($rel['fieldConf'][$relConf[1]]) == 'has-many') {
 					// compute mm table name
-					$deletable[] = isset($relConf[2]) ? $relConf[2] :
-						static::getMMTableName(
-							$rel['table'], $relConf[1], $table, $key,
-							$rel['fieldConf'][$relConf[1]]['has-many']);
+					$deletable[] = $relConf[2] ?? static::getMMTableName(
+                        $rel['table'], $relConf[1], $table, $key,
+                        $rel['fieldConf'][$relConf[1]]['has-many']);
 				}
 			}
 		}
@@ -508,9 +506,8 @@ class Cortex extends Cursor {
 	protected function mmTable($conf, $key, $fConf=null) {
 		if (!isset($conf['refTable'])) {
 			// compute mm table name
-			$mmTable = isset($conf[2]) ? $conf[2] :
-				static::getMMTableName($conf['relTable'],
-					$conf['relField'], $this->table, $key, $fConf);
+			$mmTable = $conf[2] ?? static::getMMTableName($conf['relTable'],
+                $conf['relField'], $this->table, $key, $fConf);
 			$this->fieldConf[$key]['has-many']['refTable'] = $mmTable;
 		} else
 			$mmTable = $conf['refTable'];
@@ -558,11 +555,9 @@ class Cortex extends Cursor {
 				$field['has-many']['hasRel'] = 'has-many';
 				$field['has-many']['isSelf'] = (ltrim($relConf[0],'\\')==get_called_class());
 				$field['has-many']['relTable'] = $rel['table'];
-				$field['has-many']['relField'] = $relField =
-					isset($relConf['relField']) ? $relConf['relField'] : $relConf[1];
+				$field['has-many']['relField'] = $relField = $relConf['relField'] ?? $relConf[1];
 				$field['has-many']['selfRefField'] = $relField.'_ref';
-				$field['has-many']['relFieldType'] = isset($rel['fieldConf'][$relConf[1]]['type']) ?
-					$rel['fieldConf'][$relConf[1]]['type'] : Schema::DT_INT;
+				$field['has-many']['relFieldType'] = $rel['fieldConf'][$relConf[1]]['type'] ?? Schema::DT_INT;
 				if (isset($rel['fieldConf'][$relConf[1]]['has-many']['relPK'])) {
 					$field['has-many']['relPK'] = $rel['fieldConf'][$relConf[1]]['has-many']['relPK'];
 					$field['type'] = $rel['fieldConf'][$rel['fieldConf'][$relConf[1]]['has-many']['relPK']]['type'];
@@ -574,8 +569,7 @@ class Cortex extends Cursor {
 				}
 				else
 					$field['has-many']['relPK'] = $rel['primary'];
-				$field['has-many']['localKey'] = isset($relConf['localKey'])?
-					$relConf['localKey']:($pkey?:'_id');
+				$field['has-many']['localKey'] = $relConf['localKey'] ?? ($pkey ?: '_id');
 			} else {
 				// has-many <> belongs-to-one (m:1)
 				$field['has-many']['hasRel'] = 'belongs-to-one';
@@ -648,7 +642,7 @@ class Cortex extends Cursor {
 		$cc->setModels($result);
 		if($sort) {
 			$cc->orderBy($options['order']);
-			$cc->slice(isset($offset)?$offset:0,isset($limit)?$limit:NULL);
+			$cc->slice($offset ?? 0, $limit ?? NULL);
 		}
 		$this->clearFilter();
 		return $cc;
@@ -657,12 +651,12 @@ class Cortex extends Cursor {
 	/**
 	 * wrapper for custom find queries
 	 * @param array $filter
-	 * @param array $options
+	 * @param array|null $options
 	 * @param int $ttl
 	 * @param bool $count
 	 * @return array|int|false array of underlying cursor objects
 	 */
-	protected function filteredFind($filter = NULL, array $options = NULL, $ttl = 0, $count=false) {
+	protected function filteredFind($filter = NULL, ?array $options = NULL, $ttl = 0, $count=false) {
 		if (empty($filter))
 			$filter = NULL;
 		if ($this->grp_stack) {
@@ -725,7 +719,7 @@ class Cortex extends Cursor {
 					$hasCond = [null,null];
 				}
 				list($has_filter,$has_options) = $hasCond;
-				$isOrCondition = isset($has_options['OR']) ? $has_options['OR'] : FALSE;
+				$isOrCondition = $has_options['OR'] ?? FALSE;
 				$type = $this->fieldConf[$key]['relType'];
 				$fromConf = $this->fieldConf[$key][$type];
 				switch($type) {
@@ -777,7 +771,7 @@ class Cortex extends Cursor {
 							if (!is_array($fromConf))
 								$fromConf = [$fromConf, '_id'];
 							$rel = $fromConf[0]::resolveConfiguration();
-							if ($this->dbsType == 'sql' && $fromConf[1] == '_id')
+							if ($fromConf[1] == '_id')
 								$fromConf[1] = $rel['primary'];
 							$hasJoin[] = $this->_hasJoin_sql($key,$rel['table'],$hasCond,$filter,$options);
 						} elseif ($result = $this->_hasRefsIn($key,$has_filter,$has_options,$ttl))
@@ -938,11 +932,11 @@ class Cortex extends Cursor {
 	/**
 	 * Retrieve first object that satisfies criteria
 	 * @param array|null  $filter
-	 * @param array $options
+	 * @param array|null $options
 	 * @param int   $ttl
 	 * @return bool
 	 */
-	public function load($filter = NULL, array $options = NULL, $ttl = 0) {
+	public function load($filter = NULL, ?array $options = NULL, $ttl = 0) {
 		$this->reset(TRUE, FALSE);
 		$this->_ttl=$ttl?:$this->rel_ttl;
 		$res = $this->filteredFind($filter, $options, $ttl);
@@ -959,7 +953,7 @@ class Cortex extends Cursor {
 	/**
 	 * add has-conditional filter to next find call
 	 * @param string $key
-	 * @param array $filter
+	 * @param ?array $filter
 	 * @param null $options
 	 * @return $this
 	 */
@@ -1258,7 +1252,7 @@ class Cortex extends Cursor {
 			}
 			$this->mapper->erase();
 			$this->emit('aftererase');
-		} elseif($filter)
+		} else
 			$this->mapper->erase($filter);
 		return true;
 	}
@@ -1378,11 +1372,11 @@ class Cortex extends Cursor {
 	/**
 	 * Count records that match criteria
 	 * @param array $filter
-	 * @param array $options
+	 * @param array|null $options
 	 * @param int $ttl
 	 * @return mixed
 	 */
-	public function count($filter=NULL, array $options=NULL, $ttl=60) {
+	public function count($filter=NULL, ?array $options=NULL, $ttl=60) {
 		$has=$this->hasCond;
 		$count=$this->filteredFind($filter,$options,$ttl,true);
 		$this->hasCond=$has;
@@ -1411,7 +1405,7 @@ class Cortex extends Cursor {
 			$alias = 'count_'.$key;
 		$filter_bak = null;
 		if ($filter || $option) {
-			$filter_bak = isset($this->relFilter[$key]) ? $this->relFilter[$key] : false;
+			$filter_bak = $this->relFilter[$key] ?? false;
 			$this->filter($key,$filter,$option);
 		}
 		if (isset($this->fieldConf[$key])){
@@ -1838,7 +1832,7 @@ class Cortex extends Cursor {
 						$this->fieldsCache[$key] = $result ? (($type == 'has-one')
 							? $result[0][0] : CortexCollection::factory($result[0])) : NULL;
 					}	// no collection
-					elseif (($val=$this->getRaw($toConf[1])) && $val!==NULL) {
+					elseif (($val=$this->getRaw($toConf[1]))) {
 						$crit=[$fromConf[1].' = ?',$val];
 						$crit=$this->mergeWithRelFilter($key,$crit);
 						$opt=$this->getRelFilterOption($key);
@@ -1910,7 +1904,6 @@ class Cortex extends Cursor {
 						$fId=$this->get($fromConf['localKey'],true);
 						$filter = [$fromConf['relField'].' = ?',$fId];
 						if ($fromConf['isSelf']) {
-							$filter = [$fromConf['relField'].' = ?',$fId];
 							$filter[0].= ' OR '.$fromConf['selfRefField'].' = ?';
 							$filter[] = $filter[1];
 						}
