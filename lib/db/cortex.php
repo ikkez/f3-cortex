@@ -1294,17 +1294,23 @@ class Cortex extends Cursor {
 							$filter[] = $id;
 						}
 						// delete all refs
-						if (empty($val))
+						if (empty($val) || ($val instanceof CortexCollection && empty($val->getArrayCopy())))
 							$mm->erase($filter);
 						// update refs
 						elseif (is_array($val)) {
-							// TODO: check if we can keep existing entries
-							$mm->erase($filter);
 							$relFieldConf = $this->getRelInstance($relConf[0],$relConf,$key)
 								->getFieldConfiguration();
 							$fkey = $relFieldConf[$relConf[1]]['has-many']['relField'];
+							// keep existing entries
+                            $refs = $mm->find($filter);
+                            $existingRefIds = $refs ? $refs->getAll($fkey) : [];
+                            $removed_refs = array_diff($existingRefIds, $val);
+                            foreach ($removed_refs as $rId) {
+                                $mm->erase($mm->mergeFilter([$filter, [$fkey.'= ?', $rId]]));
+                            }
 							foreach(array_unique($val) as $v) {
-								if ($relConf['isSelf'] && $v==$id)
+								if (($relConf['isSelf'] && $v==$id)
+                                    || in_array($v, $existingRefIds))
 									continue;
 								$mm->set($fkey,$v);
 								$mm->set($relConf['isSelf'] ? $relConf['selfRefField']
