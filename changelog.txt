@@ -1,5 +1,9 @@
 CHANGELOG - Cortex ORM
 
+1.7.8 (25.02.2025)
+*   fix: php 8.4 deprecations #137
+*   fix: keep existing pivot records when updating m:m fields, #129
+
 1.7.7 (06.03.2024)
 *   fix #121: wrong condition variable used for orHas check
 *   fix #125: ensure cached rel obj isn't altered by whitelist

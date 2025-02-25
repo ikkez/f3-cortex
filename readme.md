@@ -23,6 +23,9 @@ You can also mash-up multiple engines or use them simultaneously.
 
 It's great for fast and easy data abstraction and offers a bunch of useful filter possibilities.
 
+[![Latest Stable Version](http://poser.pugx.org/ikkez/f3-cortex/v)](https://packagist.org/packages/ikkez/f3-cortex) 
+[![Total Downloads](http://poser.pugx.org/ikkez/f3-cortex/downloads)](https://packagist.org/packages/ikkez/f3-cortex)
+
 ---
 
 ## Table of Contents
