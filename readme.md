@@ -3,6 +3,8 @@
 
 ### A general purpose Data-Mapper for the PHP Fat-Free Framework
 
+[![Latest Stable Version](https://poser.pugx.org/ikkez/f3-cortex/v)](https://packagist.org/packages/ikkez/f3-cortex)
+[![Total Downloads](https://poser.pugx.org/ikkez/f3-cortex/downloads)](https://packagist.org/packages/ikkez/f3-cortex)
 
 Cortex is a multi-engine ActiveRecord ORM / ODM that offers easy object persistence. Some of its main features are:
 
@@ -23,8 +25,6 @@ You can also mash-up multiple engines or use them simultaneously.
 
 It's great for fast and easy data abstraction and offers a bunch of useful filter possibilities.
 
-[![Latest Stable Version](http://poser.pugx.org/ikkez/f3-cortex/v)](https://packagist.org/packages/ikkez/f3-cortex) 
-[![Total Downloads](http://poser.pugx.org/ikkez/f3-cortex/downloads)](https://packagist.org/packages/ikkez/f3-cortex)
 
 ---
 
