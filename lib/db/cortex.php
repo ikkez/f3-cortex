@@ -600,7 +600,7 @@ class Cortex extends Cursor {
 	 * @param array|null $filter
 	 * @param array|null $options
 	 * @param int        $ttl
-	 * @return static[]|false
+	 * @return static[]|\Db\CortexCollection|false
 	 */
 	public function find($filter = NULL, ?array $options = NULL, $ttl = 0) {
 		$sort=false;
@@ -916,7 +916,7 @@ class Cortex extends Cursor {
 	 * @param $sql
 	 * @param array|null $args
 	 * @param int $ttl
-	 * @return static[]|CortexCollection
+	 * @return static[]|\DB\CortexCollection
 	 */
 	public function findByRawSQL($query, $args=NULL, $ttl=0) {
 		$result = $this->db->exec($query, $args, $ttl);
